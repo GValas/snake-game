@@ -1,407 +1,425 @@
+import { fromEvent, merge, interval, EMPTY, Subject } from 'rxjs';
+import {
+  map, filter, scan, switchMap, distinctUntilChanged,
+  startWith, shareReplay, tap, share, withLatestFrom,
+} from 'rxjs/operators';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
-type Point = { x: number; y: number };
-type GameState = "IDLE" | "RUNNING" | "PAUSED" | "GAME_OVER";
+type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+type Point     = { x: number; y: number };
+type Status    = 'IDLE' | 'RUNNING' | 'PAUSED' | 'GAME_OVER';
+
+type ParticleState = {
+  x: number; y: number; vx: number; vy: number;
+  color: string; life: number; maxLife: number;
+};
+
+type State = {
+  snake:         Point[];
+  food:          Point;
+  direction:     Direction;
+  nextDirection: Direction;
+  score:         number;
+  highScore:     number;
+  status:        Status;
+  speed:         number;
+  particles:     ParticleState[];
+  frame:         number;
+};
+
+type Action =
+  | { type: 'START' }
+  | { type: 'TICK' }
+  | { type: 'SET_DIRECTION'; dir: Direction }
+  | { type: 'TOGGLE_PAUSE' };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GRID_SIZE = 20;
-const CELL_SIZE = 24;
-const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
-const INITIAL_SPEED = 150;
+const GRID_SIZE       = 20;
+const CELL_SIZE       = 24;
+const CANVAS_SIZE     = GRID_SIZE * CELL_SIZE;
+const INITIAL_SPEED   = 150;
 const SPEED_INCREMENT = 5;
-const MIN_SPEED = 60;
+const MIN_SPEED       = 60;
 
-// ─── Game Logic ───────────────────────────────────────────────────────────────
+const OPPOSITE: Record<Direction, Direction> = {
+  UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT',
+};
 
-class SnakeGame {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
-  private snake: Point[] = [];
-  private food: Point = { x: 0, y: 0 };
-  private direction: Direction = "RIGHT";
-  private nextDirection: Direction = "RIGHT";
-  private score: number = 0;
-  private highScore: number = 0;
-  private state: GameState = "IDLE";
-  private speed: number = INITIAL_SPEED;
-  private intervalId: number | null = null;
-  private particleSystem: Particle[] = [];
-  private frame: number = 0;
+const KEY_TO_DIR: Record<string, Direction> = {
+  ArrowUp: 'UP',   w: 'UP',   W: 'UP',
+  ArrowDown: 'DOWN', s: 'DOWN', S: 'DOWN',
+  ArrowLeft: 'LEFT', a: 'LEFT', A: 'LEFT',
+  ArrowRight: 'RIGHT', d: 'RIGHT', D: 'RIGHT',
+};
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas;
-    this.canvas.width = CANVAS_SIZE;
-    this.canvas.height = CANVAS_SIZE;
-    this.ctx = canvas.getContext("2d")!;
-    this.highScore = parseInt(localStorage.getItem("snakeHighScore") ?? "0");
-    this.setupControls();
-    this.render();
-  }
+// ─── Pure helpers ─────────────────────────────────────────────────────────────
 
-  private setupControls(): void {
-    document.addEventListener("keydown", (e: KeyboardEvent) => {
-      switch (e.key) {
-        case "ArrowUp":
-        case "w":
-        case "W":
-          e.preventDefault();
-          if (this.direction !== "DOWN") this.nextDirection = "UP";
-          break;
-        case "ArrowDown":
-        case "s":
-        case "S":
-          e.preventDefault();
-          if (this.direction !== "UP") this.nextDirection = "DOWN";
-          break;
-        case "ArrowLeft":
-        case "a":
-        case "A":
-          e.preventDefault();
-          if (this.direction !== "RIGHT") this.nextDirection = "LEFT";
-          break;
-        case "ArrowRight":
-        case "d":
-        case "D":
-          e.preventDefault();
-          if (this.direction !== "LEFT") this.nextDirection = "RIGHT";
-          break;
-        case " ":
-          e.preventDefault();
-          this.togglePause();
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (this.state === "IDLE" || this.state === "GAME_OVER") this.start();
-          break;
-      }
-    });
-  }
+const loadHighScore = (): number =>
+  parseInt(localStorage.getItem('snakeHighScore') ?? '0');
 
-  public start(): void {
-    this.snake = [
-      { x: 10, y: 10 },
-      { x: 9, y: 10 },
-      { x: 8, y: 10 },
-    ];
-    this.direction = "RIGHT";
-    this.nextDirection = "RIGHT";
-    this.score = 0;
-    this.speed = INITIAL_SPEED;
-    this.particleSystem = [];
-    this.placeFood();
-    this.setState("RUNNING");
-    this.updateScoreDisplay();
-    this.scheduleNext();
-  }
+const saveHighScore = (n: number): void =>
+  localStorage.setItem('snakeHighScore', String(n));
 
-  private togglePause(): void {
-    if (this.state === "RUNNING") {
-      this.setState("PAUSED");
-      if (this.intervalId) clearTimeout(this.intervalId);
-    } else if (this.state === "PAUSED") {
-      this.setState("RUNNING");
-      this.scheduleNext();
-    } else if (this.state === "IDLE" || this.state === "GAME_OVER") {
-      this.start();
-    }
-  }
+const randomFood = (snake: Point[]): Point => {
+  let pos: Point;
+  do {
+    pos = {
+      x: Math.floor(Math.random() * GRID_SIZE),
+      y: Math.floor(Math.random() * GRID_SIZE),
+    };
+  } while (snake.some(p => p.x === pos.x && p.y === pos.y));
+  return pos;
+};
 
-  private setState(s: GameState): void {
-    this.state = s;
-    document.getElementById("state-label")!.textContent =
-      s === "PAUSED" ? "PAUSE" : s === "GAME_OVER" ? "GAME OVER" : "";
-  }
+const nextHead = (head: Point, dir: Direction): Point => ({
+  UP:    { x: head.x,     y: head.y - 1 },
+  DOWN:  { x: head.x,     y: head.y + 1 },
+  LEFT:  { x: head.x - 1, y: head.y     },
+  RIGHT: { x: head.x + 1, y: head.y     },
+}[dir]);
 
-  private scheduleNext(): void {
-    this.intervalId = window.setTimeout(() => {
-      this.tick();
-    }, this.speed);
-  }
+const isOutOfBounds = (p: Point): boolean =>
+  p.x < 0 || p.x >= GRID_SIZE || p.y < 0 || p.y >= GRID_SIZE;
 
-  private tick(): void {
-    if (this.state !== "RUNNING") return;
-    this.direction = this.nextDirection;
-    const head = { ...this.snake[0] };
+const samePoint = (a: Point, b: Point): boolean =>
+  a.x === b.x && a.y === b.y;
 
-    switch (this.direction) {
-      case "UP": head.y--; break;
-      case "DOWN": head.y++; break;
-      case "LEFT": head.x--; break;
-      case "RIGHT": head.x++; break;
-    }
+const makeFoodParticles = (food: Point): ParticleState[] =>
+  Array.from({ length: 10 }, (_, i) => {
+    const angle = (Math.PI * 2 * i) / 10;
+    const speed = 1.5 + Math.random() * 2;
+    return {
+      x: food.x * CELL_SIZE + CELL_SIZE / 2,
+      y: food.y * CELL_SIZE + CELL_SIZE / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: '#f97316', life: 20, maxLife: 20,
+    };
+  });
 
-    // Wall collision
-    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-      this.gameOver();
-      return;
-    }
-
-    // Self collision
-    if (this.snake.some(p => p.x === head.x && p.y === head.y)) {
-      this.gameOver();
-      return;
-    }
-
-    this.snake.unshift(head);
-
-    if (head.x === this.food.x && head.y === this.food.y) {
-      this.eatFood();
-    } else {
-      this.snake.pop();
-    }
-
-    this.frame++;
-    this.render();
-    this.scheduleNext();
-  }
-
-  private eatFood(): void {
-    this.score += 10;
-    if (this.score > this.highScore) {
-      this.highScore = this.score;
-      localStorage.setItem("snakeHighScore", String(this.highScore));
-    }
-    this.speed = Math.max(MIN_SPEED, this.speed - SPEED_INCREMENT);
-    this.spawnParticles(this.food.x, this.food.y);
-    this.placeFood();
-    this.updateScoreDisplay();
-  }
-
-  private placeFood(): void {
-    let pos: Point;
-    do {
-      pos = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
+const makeDeathParticles = (snake: Point[]): ParticleState[] =>
+  snake.flatMap(seg =>
+    Array.from({ length: 3 }, () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3;
+      return {
+        x: seg.x * CELL_SIZE + CELL_SIZE / 2,
+        y: seg.y * CELL_SIZE + CELL_SIZE / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: '#ef4444', life: 30, maxLife: 30,
       };
-    } while (this.snake.some(p => p.x === pos.x && p.y === pos.y));
-    this.food = pos;
-  }
+    })
+  );
 
-  private gameOver(): void {
-    if (this.intervalId) clearTimeout(this.intervalId);
-    this.setState("GAME_OVER");
-    this.spawnDeathParticles();
-    this.render();
-    document.getElementById("final-score")!.textContent = String(this.score);
-    document.getElementById("game-over-overlay")!.classList.add("visible");
-  }
+const stepParticles = (ps: ParticleState[]): ParticleState[] =>
+  ps
+    .filter(p => p.life > 0)
+    .map(p => ({
+      ...p,
+      x: p.x + p.vx, y: p.y + p.vy,
+      vx: p.vx * 0.92, vy: p.vy * 0.92,
+      life: p.life - 1,
+    }));
 
-  private spawnParticles(gx: number, gy: number): void {
-    const cx = gx * CELL_SIZE + CELL_SIZE / 2;
-    const cy = gy * CELL_SIZE + CELL_SIZE / 2;
-    for (let i = 0; i < 10; i++) {
-      const angle = (Math.PI * 2 * i) / 10;
-      const speed = 1.5 + Math.random() * 2;
-      this.particleSystem.push(new Particle(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed, "#f97316", 20));
-    }
-  }
+// ─── State & Reducer ──────────────────────────────────────────────────────────
 
-  private spawnDeathParticles(): void {
-    for (const seg of this.snake) {
-      const cx = seg.x * CELL_SIZE + CELL_SIZE / 2;
-      const cy = seg.y * CELL_SIZE + CELL_SIZE / 2;
-      for (let i = 0; i < 3; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 3;
-        this.particleSystem.push(new Particle(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed, "#ef4444", 30));
+const initialState = (): State => ({
+  snake: [], food: { x: 0, y: 0 },
+  direction: 'RIGHT', nextDirection: 'RIGHT',
+  score: 0, highScore: loadHighScore(),
+  status: 'IDLE', speed: INITIAL_SPEED,
+  particles: [], frame: 0,
+});
+
+const startState = (highScore: number): State => {
+  const snake: Point[] = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+  return {
+    snake, food: randomFood(snake),
+    direction: 'RIGHT', nextDirection: 'RIGHT',
+    score: 0, highScore, status: 'RUNNING',
+    speed: INITIAL_SPEED, particles: [], frame: 0,
+  };
+};
+
+function reduce(state: State, action: Action): State {
+  switch (action.type) {
+
+    case 'START':
+      return startState(state.highScore);
+
+    case 'TOGGLE_PAUSE':
+      if (state.status === 'RUNNING') return { ...state, status: 'PAUSED' };
+      if (state.status === 'PAUSED')  return { ...state, status: 'RUNNING' };
+      return startState(state.highScore);
+
+    case 'SET_DIRECTION':
+      if (state.status !== 'RUNNING') return state;
+      if (action.dir === OPPOSITE[state.direction]) return state;
+      return { ...state, nextDirection: action.dir };
+
+    case 'TICK': {
+      if (state.status !== 'RUNNING') return state;
+
+      const dir        = state.nextDirection;
+      const head       = nextHead(state.snake[0], dir);
+      const particles  = stepParticles(state.particles);
+
+      if (isOutOfBounds(head) || state.snake.some(p => samePoint(p, head))) {
+        return {
+          ...state, status: 'GAME_OVER',
+          particles: [...particles, ...makeDeathParticles(state.snake)],
+        };
       }
-    }
-  }
 
-  private render(): void {
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      const ate   = samePoint(head, state.food);
+      const snake = ate
+        ? [head, ...state.snake]
+        : [head, ...state.snake.slice(0, -1)];
 
-    // Background grid
-    ctx.fillStyle = "#0a0a0f";
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    ctx.strokeStyle = "rgba(255,255,255,0.03)";
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= GRID_SIZE; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE, 0);
-      ctx.lineTo(i * CELL_SIZE, CANVAS_SIZE);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE);
-      ctx.lineTo(CANVAS_SIZE, i * CELL_SIZE);
-      ctx.stroke();
-    }
-
-    // Particles
-    this.particleSystem = this.particleSystem.filter(p => p.life > 0);
-    for (const p of this.particleSystem) {
-      p.update();
-      p.draw(ctx);
-    }
-
-    if (this.state === "IDLE") return;
-
-    // Food
-    const fx = this.food.x * CELL_SIZE + CELL_SIZE / 2;
-    const fy = this.food.y * CELL_SIZE + CELL_SIZE / 2;
-    const pulse = 0.85 + 0.15 * Math.sin(this.frame * 0.15);
-    const fr = (CELL_SIZE / 2 - 2) * pulse;
-    const foodGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
-    foodGrad.addColorStop(0, "#fff7ed");
-    foodGrad.addColorStop(0.4, "#f97316");
-    foodGrad.addColorStop(1, "#c2410c");
-    ctx.shadowBlur = 16;
-    ctx.shadowColor = "#f97316";
-    ctx.beginPath();
-    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
-    ctx.fillStyle = foodGrad;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Snake
-    for (let i = 0; i < this.snake.length; i++) {
-      const seg = this.snake[i];
-      const x = seg.x * CELL_SIZE;
-      const y = seg.y * CELL_SIZE;
-      const t = i / this.snake.length;
-      const alpha = 1 - t * 0.5;
-
-      if (i === 0) {
-        // Head
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = "#22c55e";
-        const headGrad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-        headGrad.addColorStop(0, `rgba(134,239,172,${alpha})`);
-        headGrad.addColorStop(1, `rgba(21,128,61,${alpha})`);
-        this.roundRect(ctx, x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 6);
-        ctx.fillStyle = headGrad;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        // Eyes
-        this.drawEyes(ctx, seg);
-      } else {
-        const bodyGrad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-        bodyGrad.addColorStop(0, `rgba(74,222,128,${alpha})`);
-        bodyGrad.addColorStop(1, `rgba(22,101,52,${alpha})`);
-        this.roundRect(ctx, x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
-        ctx.fillStyle = bodyGrad;
-        ctx.fill();
+      if (!ate) {
+        return { ...state, direction: dir, snake, particles, frame: state.frame + 1 };
       }
+
+      const score     = state.score + 10;
+      const highScore = Math.max(score, state.highScore);
+      if (highScore > state.highScore) saveHighScore(highScore);
+
+      return {
+        ...state, direction: dir, snake,
+        food:       randomFood(snake),
+        score, highScore,
+        speed:      Math.max(MIN_SPEED, state.speed - SPEED_INCREMENT),
+        particles:  [...particles, ...makeFoodParticles(state.food)],
+        frame:      state.frame + 1,
+      };
     }
 
-    if (this.state === "PAUSED") {
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    }
+    default:
+      return state;
   }
-
-  private drawEyes(ctx: CanvasRenderingContext2D, head: Point): void {
-    const cx = head.x * CELL_SIZE + CELL_SIZE / 2;
-    const cy = head.y * CELL_SIZE + CELL_SIZE / 2;
-    const eyeOffset = 5;
-    const eyeR = 2.5;
-
-    let e1x = cx, e1y = cy, e2x = cx, e2y = cy;
-    switch (this.direction) {
-      case "RIGHT": e1x = cx + 3; e1y = cy - eyeOffset; e2x = cx + 3; e2y = cy + eyeOffset; break;
-      case "LEFT":  e1x = cx - 3; e1y = cy - eyeOffset; e2x = cx - 3; e2y = cy + eyeOffset; break;
-      case "UP":    e1x = cx - eyeOffset; e1y = cy - 3; e2x = cx + eyeOffset; e2y = cy - 3; break;
-      case "DOWN":  e1x = cx - eyeOffset; e1y = cy + 3; e2x = cx + eyeOffset; e2y = cy + 3; break;
-    }
-
-    ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.arc(e1x, e1y, eyeR, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(e2x, e2y, eyeR, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#111";
-    ctx.beginPath(); ctx.arc(e1x, e1y, eyeR / 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(e2x, e2y, eyeR / 2, 0, Math.PI * 2); ctx.fill();
-  }
-
-  private roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  }
-
-  private updateScoreDisplay(): void {
-    document.getElementById("score")!.textContent = String(this.score);
-    document.getElementById("high-score")!.textContent = String(this.highScore);
-  }
-
-  public getState(): GameState { return this.state; }
 }
 
-// ─── Particle ─────────────────────────────────────────────────────────────────
+// ─── Rendering ────────────────────────────────────────────────────────────────
 
-class Particle {
-  x: number; y: number; vx: number; vy: number;
-  color: string; life: number; maxLife: number;
-
-  constructor(x: number, y: number, vx: number, vy: number, color: string, life: number) {
-    this.x = x; this.y = y; this.vx = vx; this.vy = vy;
-    this.color = color; this.life = life; this.maxLife = life;
+function drawGrid(ctx: CanvasRenderingContext2D): void {
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= GRID_SIZE; i++) {
+    ctx.beginPath(); ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, CANVAS_SIZE); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(CANVAS_SIZE, i * CELL_SIZE); ctx.stroke();
   }
+}
 
-  update(): void {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vx *= 0.92;
-    this.vy *= 0.92;
-    this.life--;
-  }
-
-  draw(ctx: CanvasRenderingContext2D): void {
-    const alpha = this.life / this.maxLife;
-    const r = 3 * alpha;
+function drawParticles(ctx: CanvasRenderingContext2D, particles: ParticleState[]): void {
+  for (const p of particles) {
+    const alpha = p.life / p.maxLife;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = this.color;
+    ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 3 * alpha, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = 1;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawEyes(ctx: CanvasRenderingContext2D, head: Point, dir: Direction): void {
+  const cx = head.x * CELL_SIZE + CELL_SIZE / 2;
+  const cy = head.y * CELL_SIZE + CELL_SIZE / 2;
+  const off = 5;
+  const r   = 2.5;
+  const [e1x, e1y, e2x, e2y] = ({
+    RIGHT: [cx + 3, cy - off, cx + 3, cy + off],
+    LEFT:  [cx - 3, cy - off, cx - 3, cy + off],
+    UP:    [cx - off, cy - 3, cx + off, cy - 3],
+    DOWN:  [cx - off, cy + 3, cx + off, cy + 3],
+  } as Record<Direction, number[]>)[dir];
+
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(e1x, e1y, r,     0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(e2x, e2y, r,     0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.arc(e1x, e1y, r / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(e2x, e2y, r / 2, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawFood(ctx: CanvasRenderingContext2D, food: Point, frame: number): void {
+  const fx    = food.x * CELL_SIZE + CELL_SIZE / 2;
+  const fy    = food.y * CELL_SIZE + CELL_SIZE / 2;
+  const pulse = 0.85 + 0.15 * Math.sin(frame * 0.15);
+  const fr    = (CELL_SIZE / 2 - 2) * pulse;
+  const grad  = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+  grad.addColorStop(0,   '#fff7ed');
+  grad.addColorStop(0.4, '#f97316');
+  grad.addColorStop(1,   '#c2410c');
+  ctx.shadowBlur = 16; ctx.shadowColor = '#f97316';
+  ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawSnake(ctx: CanvasRenderingContext2D, snake: Point[], direction: Direction): void {
+  snake.forEach((seg, i) => {
+    const x     = seg.x * CELL_SIZE;
+    const y     = seg.y * CELL_SIZE;
+    const alpha = 1 - (i / snake.length) * 0.5;
+
+    if (i === 0) {
+      ctx.shadowBlur = 20; ctx.shadowColor = '#22c55e';
+      const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+      grad.addColorStop(0, `rgba(134,239,172,${alpha})`);
+      grad.addColorStop(1, `rgba(21,128,61,${alpha})`);
+      roundRect(ctx, x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 6);
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.shadowBlur = 0;
+      drawEyes(ctx, seg, direction);
+    } else {
+      const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+      grad.addColorStop(0, `rgba(74,222,128,${alpha})`);
+      grad.addColorStop(1, `rgba(22,101,52,${alpha})`);
+      roundRect(ctx, x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
+      ctx.fillStyle = grad; ctx.fill();
+    }
+  });
+}
+
+function render(ctx: CanvasRenderingContext2D, state: State): void {
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  drawGrid(ctx);
+  drawParticles(ctx, state.particles);
+  if (state.status === 'IDLE') return;
+  drawFood(ctx, state.food, state.frame);
+  drawSnake(ctx, state.snake, state.direction);
+  if (state.status === 'PAUSED') {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  }
+}
+
+function updateDOM(state: State): void {
+  document.getElementById('score')!.textContent      = String(state.score);
+  document.getElementById('high-score')!.textContent = String(state.highScore);
+  document.getElementById('state-label')!.textContent =
+    state.status === 'PAUSED'    ? 'PAUSE'     :
+    state.status === 'GAME_OVER' ? 'GAME OVER' : '';
+
+  const overlay = document.getElementById('game-over-overlay')!;
+  if (state.status === 'GAME_OVER') {
+    document.getElementById('final-score')!.textContent = String(state.score);
+    overlay.classList.add('visible');
+  } else {
+    overlay.classList.remove('visible');
+  }
+
+  if (state.status !== 'IDLE') {
+    document.getElementById('start-overlay')!.classList.add('hidden');
   }
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
-window.addEventListener("DOMContentLoaded", () => {
-  const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
-  const game = new SnakeGame(canvas);
+window.addEventListener('DOMContentLoaded', () => {
+  const canvas      = document.getElementById('game-canvas') as HTMLCanvasElement;
+  canvas.width      = CANVAS_SIZE;
+  canvas.height     = CANVAS_SIZE;
+  const ctx         = canvas.getContext('2d')!;
+  const action$     = new Subject<Action>();
 
-  document.getElementById("btn-start")!.addEventListener("click", () => {
-    document.getElementById("game-over-overlay")!.classList.remove("visible");
-    game.start();
+  // ── Input streams ──────────────────────────────────────────────────────────
+
+  const PREVENT_KEYS = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter']);
+
+  const keydown$ = fromEvent<KeyboardEvent>(document, 'keydown').pipe(
+    tap(e => { if (PREVENT_KEYS.has(e.key)) e.preventDefault(); }),
+    share(),
+  );
+
+  const directionAction$ = keydown$.pipe(
+    map(e => KEY_TO_DIR[e.key] as Direction | undefined),
+    filter((dir): dir is Direction => dir !== undefined),
+    map(dir => ({ type: 'SET_DIRECTION', dir } as Action)),
+  );
+
+  const pauseAction$ = keydown$.pipe(
+    filter(e => e.key === ' '),
+    map((): Action => ({ type: 'TOGGLE_PAUSE' })),
+  );
+
+  const startAction$ = merge(
+    fromEvent(document.getElementById('btn-start')!,   'click'),
+    fromEvent(document.getElementById('btn-restart')!, 'click'),
+    keydown$.pipe(filter(e => e.key === 'Enter')),
+  ).pipe(map((): Action => ({ type: 'START' })));
+
+  // ── Touch → direction (swipe) ──────────────────────────────────────────────
+
+  const touchStart$ = fromEvent<TouchEvent>(canvas, 'touchstart', { passive: false } as AddEventListenerOptions).pipe(
+    tap(e => e.preventDefault()),
+    map(e => ({ x: e.touches[0].clientX, y: e.touches[0].clientY })),
+    share(),
+  );
+
+  const swipeAction$ = fromEvent<TouchEvent>(canvas, 'touchend', { passive: false } as AddEventListenerOptions).pipe(
+    tap(e => e.preventDefault()),
+    withLatestFrom(touchStart$),
+    map(([end, start]) => {
+      const dx  = end.changedTouches[0].clientX - start.x;
+      const dy  = end.changedTouches[0].clientY - start.y;
+      const dir: Direction = Math.abs(dx) > Math.abs(dy)
+        ? (dx > 0 ? 'RIGHT' : 'LEFT')
+        : (dy > 0 ? 'DOWN'  : 'UP');
+      return { type: 'SET_DIRECTION', dir } as Action;
+    }),
+  );
+
+  // ── State stream ───────────────────────────────────────────────────────────
+
+  const INIT   = initialState();
+  const state$ = action$.pipe(
+    scan(reduce, INIT),
+    startWith(INIT),
+    shareReplay(1),
+  );
+
+  // ── Auto-tick: emits TICK at current speed only while RUNNING ──────────────
+
+  const tick$ = state$.pipe(
+    map(s => s.status === 'RUNNING' ? s.speed : null),
+    distinctUntilChanged(),
+    switchMap(speed =>
+      speed !== null
+        ? interval(speed).pipe(map((): Action => ({ type: 'TICK' })))
+        : EMPTY
+    ),
+  );
+
+  // ── Wire all actions into the subject ──────────────────────────────────────
+
+  merge(directionAction$, pauseAction$, startAction$, swipeAction$, tick$)
+    .subscribe(action$);
+
+  // ── Side effects: render canvas + update DOM ───────────────────────────────
+
+  state$.subscribe(state => {
+    render(ctx, state);
+    updateDOM(state);
   });
-
-  document.getElementById("btn-restart")!.addEventListener("click", () => {
-    document.getElementById("game-over-overlay")!.classList.remove("visible");
-    game.start();
-  });
-
-  // Mobile swipe
-  let touchStartX = 0, touchStartY = 0;
-  canvas.addEventListener("touchstart", (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    e.preventDefault();
-  }, { passive: false });
-
-  canvas.addEventListener("touchend", (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: dx > 0 ? "ArrowRight" : "ArrowLeft" }));
-    } else {
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: dy > 0 ? "ArrowDown" : "ArrowUp" }));
-    }
-    e.preventDefault();
-  }, { passive: false });
 });

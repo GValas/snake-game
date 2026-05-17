@@ -1,407 +1,2524 @@
 "use strict";
-// ─── Types ────────────────────────────────────────────────────────────────────
-// ─── Constants ────────────────────────────────────────────────────────────────
-const GRID_SIZE = 20;
-const CELL_SIZE = 24;
-const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
-const INITIAL_SPEED = 150;
-const SPEED_INCREMENT = 5;
-const MIN_SPEED = 60;
-// ─── Game Logic ───────────────────────────────────────────────────────────────
-class SnakeGame {
-    constructor(canvas) {
-        this.snake = [];
-        this.food = { x: 0, y: 0 };
-        this.direction = "RIGHT";
-        this.nextDirection = "RIGHT";
-        this.score = 0;
-        this.highScore = 0;
-        this.state = "IDLE";
-        this.speed = INITIAL_SPEED;
-        this.intervalId = null;
-        this.particleSystem = [];
-        this.frame = 0;
-        this.canvas = canvas;
-        this.canvas.width = CANVAS_SIZE;
-        this.canvas.height = CANVAS_SIZE;
-        this.ctx = canvas.getContext("2d");
-        this.highScore = parseInt(localStorage.getItem("snakeHighScore") ?? "0");
-        this.setupControls();
-        this.render();
+(() => {
+  // node_modules/tslib/tslib.es6.mjs
+  var extendStatics = function(d, b) {
+    extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
+      d2.__proto__ = b2;
+    } || function(d2, b2) {
+      for (var p in b2) if (Object.prototype.hasOwnProperty.call(b2, p)) d2[p] = b2[p];
+    };
+    return extendStatics(d, b);
+  };
+  function __extends(d, b) {
+    if (typeof b !== "function" && b !== null)
+      throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+    extendStatics(d, b);
+    function __() {
+      this.constructor = d;
     }
-    setupControls() {
-        document.addEventListener("keydown", (e) => {
-            switch (e.key) {
-                case "ArrowUp":
-                case "w":
-                case "W":
-                    e.preventDefault();
-                    if (this.direction !== "DOWN")
-                        this.nextDirection = "UP";
-                    break;
-                case "ArrowDown":
-                case "s":
-                case "S":
-                    e.preventDefault();
-                    if (this.direction !== "UP")
-                        this.nextDirection = "DOWN";
-                    break;
-                case "ArrowLeft":
-                case "a":
-                case "A":
-                    e.preventDefault();
-                    if (this.direction !== "RIGHT")
-                        this.nextDirection = "LEFT";
-                    break;
-                case "ArrowRight":
-                case "d":
-                case "D":
-                    e.preventDefault();
-                    if (this.direction !== "LEFT")
-                        this.nextDirection = "RIGHT";
-                    break;
-                case " ":
-                    e.preventDefault();
-                    this.togglePause();
-                    break;
-                case "Enter":
-                    e.preventDefault();
-                    if (this.state === "IDLE" || this.state === "GAME_OVER")
-                        this.start();
-                    break;
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  }
+  function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) {
+      return value instanceof P ? value : new P(function(resolve) {
+        resolve(value);
+      });
+    }
+    return new (P || (P = Promise))(function(resolve, reject) {
+      function fulfilled(value) {
+        try {
+          step(generator.next(value));
+        } catch (e) {
+          reject(e);
+        }
+      }
+      function rejected(value) {
+        try {
+          step(generator["throw"](value));
+        } catch (e) {
+          reject(e);
+        }
+      }
+      function step(result) {
+        result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+      }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+  }
+  function __generator(thisArg, body) {
+    var _ = { label: 0, sent: function() {
+      if (t[0] & 1) throw t[1];
+      return t[1];
+    }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() {
+      return this;
+    }), g;
+    function verb(n) {
+      return function(v) {
+        return step([n, v]);
+      };
+    }
+    function step(op) {
+      if (f) throw new TypeError("Generator is already executing.");
+      while (g && (g = 0, op[0] && (_ = 0)), _) try {
+        if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+        if (y = 0, t) op = [op[0] & 2, t.value];
+        switch (op[0]) {
+          case 0:
+          case 1:
+            t = op;
+            break;
+          case 4:
+            _.label++;
+            return { value: op[1], done: false };
+          case 5:
+            _.label++;
+            y = op[1];
+            op = [0];
+            continue;
+          case 7:
+            op = _.ops.pop();
+            _.trys.pop();
+            continue;
+          default:
+            if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) {
+              _ = 0;
+              continue;
             }
+            if (op[0] === 3 && (!t || op[1] > t[0] && op[1] < t[3])) {
+              _.label = op[1];
+              break;
+            }
+            if (op[0] === 6 && _.label < t[1]) {
+              _.label = t[1];
+              t = op;
+              break;
+            }
+            if (t && _.label < t[2]) {
+              _.label = t[2];
+              _.ops.push(op);
+              break;
+            }
+            if (t[2]) _.ops.pop();
+            _.trys.pop();
+            continue;
+        }
+        op = body.call(thisArg, _);
+      } catch (e) {
+        op = [6, e];
+        y = 0;
+      } finally {
+        f = t = 0;
+      }
+      if (op[0] & 5) throw op[1];
+      return { value: op[0] ? op[1] : void 0, done: true };
+    }
+  }
+  function __values(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+      next: function() {
+        if (o && i >= o.length) o = void 0;
+        return { value: o && o[i++], done: !o };
+      }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+  }
+  function __read(o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+      while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    } catch (error) {
+      e = { error };
+    } finally {
+      try {
+        if (r && !r.done && (m = i["return"])) m.call(i);
+      } finally {
+        if (e) throw e.error;
+      }
+    }
+    return ar;
+  }
+  function __spreadArray(to, from2, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from2.length, ar; i < l; i++) {
+      if (ar || !(i in from2)) {
+        if (!ar) ar = Array.prototype.slice.call(from2, 0, i);
+        ar[i] = from2[i];
+      }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from2));
+  }
+  function __await(v) {
+    return this instanceof __await ? (this.v = v, this) : new __await(v);
+  }
+  function __asyncGenerator(thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i[Symbol.asyncIterator] = function() {
+      return this;
+    }, i;
+    function awaitReturn(f) {
+      return function(v) {
+        return Promise.resolve(v).then(f, reject);
+      };
+    }
+    function verb(n, f) {
+      if (g[n]) {
+        i[n] = function(v) {
+          return new Promise(function(a, b) {
+            q.push([n, v, a, b]) > 1 || resume(n, v);
+          });
+        };
+        if (f) i[n] = f(i[n]);
+      }
+    }
+    function resume(n, v) {
+      try {
+        step(g[n](v));
+      } catch (e) {
+        settle(q[0][3], e);
+      }
+    }
+    function step(r) {
+      r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);
+    }
+    function fulfill(value) {
+      resume("next", value);
+    }
+    function reject(value) {
+      resume("throw", value);
+    }
+    function settle(f, v) {
+      if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
+    }
+  }
+  function __asyncValues(o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function() {
+      return this;
+    }, i);
+    function verb(n) {
+      i[n] = o[n] && function(v) {
+        return new Promise(function(resolve, reject) {
+          v = o[n](v), settle(resolve, reject, v.done, v.value);
         });
+      };
     }
-    start() {
-        this.snake = [
-            { x: 10, y: 10 },
-            { x: 9, y: 10 },
-            { x: 8, y: 10 },
-        ];
-        this.direction = "RIGHT";
-        this.nextDirection = "RIGHT";
-        this.score = 0;
-        this.speed = INITIAL_SPEED;
-        this.particleSystem = [];
-        this.placeFood();
-        this.setState("RUNNING");
-        this.updateScoreDisplay();
-        this.scheduleNext();
+    function settle(resolve, reject, d, v) {
+      Promise.resolve(v).then(function(v2) {
+        resolve({ value: v2, done: d });
+      }, reject);
     }
-    togglePause() {
-        if (this.state === "RUNNING") {
-            this.setState("PAUSED");
-            if (this.intervalId)
-                clearTimeout(this.intervalId);
-        }
-        else if (this.state === "PAUSED") {
-            this.setState("RUNNING");
-            this.scheduleNext();
-        }
-        else if (this.state === "IDLE" || this.state === "GAME_OVER") {
-            this.start();
-        }
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isFunction.js
+  function isFunction(value) {
+    return typeof value === "function";
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/createErrorClass.js
+  function createErrorClass(createImpl) {
+    var _super = function(instance) {
+      Error.call(instance);
+      instance.stack = new Error().stack;
+    };
+    var ctorFunc = createImpl(_super);
+    ctorFunc.prototype = Object.create(Error.prototype);
+    ctorFunc.prototype.constructor = ctorFunc;
+    return ctorFunc;
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/UnsubscriptionError.js
+  var UnsubscriptionError = createErrorClass(function(_super) {
+    return function UnsubscriptionErrorImpl(errors) {
+      _super(this);
+      this.message = errors ? errors.length + " errors occurred during unsubscription:\n" + errors.map(function(err, i) {
+        return i + 1 + ") " + err.toString();
+      }).join("\n  ") : "";
+      this.name = "UnsubscriptionError";
+      this.errors = errors;
+    };
+  });
+
+  // node_modules/rxjs/dist/esm5/internal/util/arrRemove.js
+  function arrRemove(arr, item) {
+    if (arr) {
+      var index = arr.indexOf(item);
+      0 <= index && arr.splice(index, 1);
     }
-    setState(s) {
-        this.state = s;
-        document.getElementById("state-label").textContent =
-            s === "PAUSED" ? "PAUSE" : s === "GAME_OVER" ? "GAME OVER" : "";
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/Subscription.js
+  var Subscription = function() {
+    function Subscription2(initialTeardown) {
+      this.initialTeardown = initialTeardown;
+      this.closed = false;
+      this._parentage = null;
+      this._finalizers = null;
     }
-    scheduleNext() {
-        this.intervalId = window.setTimeout(() => {
-            this.tick();
-        }, this.speed);
-    }
-    tick() {
-        if (this.state !== "RUNNING")
-            return;
-        this.direction = this.nextDirection;
-        const head = { ...this.snake[0] };
-        switch (this.direction) {
-            case "UP":
-                head.y--;
-                break;
-            case "DOWN":
-                head.y++;
-                break;
-            case "LEFT":
-                head.x--;
-                break;
-            case "RIGHT":
-                head.x++;
-                break;
-        }
-        // Wall collision
-        if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-            this.gameOver();
-            return;
-        }
-        // Self collision
-        if (this.snake.some(p => p.x === head.x && p.y === head.y)) {
-            this.gameOver();
-            return;
-        }
-        this.snake.unshift(head);
-        if (head.x === this.food.x && head.y === this.food.y) {
-            this.eatFood();
-        }
-        else {
-            this.snake.pop();
-        }
-        this.frame++;
-        this.render();
-        this.scheduleNext();
-    }
-    eatFood() {
-        this.score += 10;
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            localStorage.setItem("snakeHighScore", String(this.highScore));
-        }
-        this.speed = Math.max(MIN_SPEED, this.speed - SPEED_INCREMENT);
-        this.spawnParticles(this.food.x, this.food.y);
-        this.placeFood();
-        this.updateScoreDisplay();
-    }
-    placeFood() {
-        let pos;
-        do {
-            pos = {
-                x: Math.floor(Math.random() * GRID_SIZE),
-                y: Math.floor(Math.random() * GRID_SIZE),
-            };
-        } while (this.snake.some(p => p.x === pos.x && p.y === pos.y));
-        this.food = pos;
-    }
-    gameOver() {
-        if (this.intervalId)
-            clearTimeout(this.intervalId);
-        this.setState("GAME_OVER");
-        this.spawnDeathParticles();
-        this.render();
-        document.getElementById("final-score").textContent = String(this.score);
-        document.getElementById("game-over-overlay").classList.add("visible");
-    }
-    spawnParticles(gx, gy) {
-        const cx = gx * CELL_SIZE + CELL_SIZE / 2;
-        const cy = gy * CELL_SIZE + CELL_SIZE / 2;
-        for (let i = 0; i < 10; i++) {
-            const angle = (Math.PI * 2 * i) / 10;
-            const speed = 1.5 + Math.random() * 2;
-            this.particleSystem.push(new Particle(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed, "#f97316", 20));
-        }
-    }
-    spawnDeathParticles() {
-        for (const seg of this.snake) {
-            const cx = seg.x * CELL_SIZE + CELL_SIZE / 2;
-            const cy = seg.y * CELL_SIZE + CELL_SIZE / 2;
-            for (let i = 0; i < 3; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 3;
-                this.particleSystem.push(new Particle(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed, "#ef4444", 30));
+    Subscription2.prototype.unsubscribe = function() {
+      var e_1, _a, e_2, _b;
+      var errors;
+      if (!this.closed) {
+        this.closed = true;
+        var _parentage = this._parentage;
+        if (_parentage) {
+          this._parentage = null;
+          if (Array.isArray(_parentage)) {
+            try {
+              for (var _parentage_1 = __values(_parentage), _parentage_1_1 = _parentage_1.next(); !_parentage_1_1.done; _parentage_1_1 = _parentage_1.next()) {
+                var parent_1 = _parentage_1_1.value;
+                parent_1.remove(this);
+              }
+            } catch (e_1_1) {
+              e_1 = { error: e_1_1 };
+            } finally {
+              try {
+                if (_parentage_1_1 && !_parentage_1_1.done && (_a = _parentage_1.return)) _a.call(_parentage_1);
+              } finally {
+                if (e_1) throw e_1.error;
+              }
             }
+          } else {
+            _parentage.remove(this);
+          }
         }
+        var initialFinalizer = this.initialTeardown;
+        if (isFunction(initialFinalizer)) {
+          try {
+            initialFinalizer();
+          } catch (e) {
+            errors = e instanceof UnsubscriptionError ? e.errors : [e];
+          }
+        }
+        var _finalizers = this._finalizers;
+        if (_finalizers) {
+          this._finalizers = null;
+          try {
+            for (var _finalizers_1 = __values(_finalizers), _finalizers_1_1 = _finalizers_1.next(); !_finalizers_1_1.done; _finalizers_1_1 = _finalizers_1.next()) {
+              var finalizer = _finalizers_1_1.value;
+              try {
+                execFinalizer(finalizer);
+              } catch (err) {
+                errors = errors !== null && errors !== void 0 ? errors : [];
+                if (err instanceof UnsubscriptionError) {
+                  errors = __spreadArray(__spreadArray([], __read(errors)), __read(err.errors));
+                } else {
+                  errors.push(err);
+                }
+              }
+            }
+          } catch (e_2_1) {
+            e_2 = { error: e_2_1 };
+          } finally {
+            try {
+              if (_finalizers_1_1 && !_finalizers_1_1.done && (_b = _finalizers_1.return)) _b.call(_finalizers_1);
+            } finally {
+              if (e_2) throw e_2.error;
+            }
+          }
+        }
+        if (errors) {
+          throw new UnsubscriptionError(errors);
+        }
+      }
+    };
+    Subscription2.prototype.add = function(teardown) {
+      var _a;
+      if (teardown && teardown !== this) {
+        if (this.closed) {
+          execFinalizer(teardown);
+        } else {
+          if (teardown instanceof Subscription2) {
+            if (teardown.closed || teardown._hasParent(this)) {
+              return;
+            }
+            teardown._addParent(this);
+          }
+          (this._finalizers = (_a = this._finalizers) !== null && _a !== void 0 ? _a : []).push(teardown);
+        }
+      }
+    };
+    Subscription2.prototype._hasParent = function(parent) {
+      var _parentage = this._parentage;
+      return _parentage === parent || Array.isArray(_parentage) && _parentage.includes(parent);
+    };
+    Subscription2.prototype._addParent = function(parent) {
+      var _parentage = this._parentage;
+      this._parentage = Array.isArray(_parentage) ? (_parentage.push(parent), _parentage) : _parentage ? [_parentage, parent] : parent;
+    };
+    Subscription2.prototype._removeParent = function(parent) {
+      var _parentage = this._parentage;
+      if (_parentage === parent) {
+        this._parentage = null;
+      } else if (Array.isArray(_parentage)) {
+        arrRemove(_parentage, parent);
+      }
+    };
+    Subscription2.prototype.remove = function(teardown) {
+      var _finalizers = this._finalizers;
+      _finalizers && arrRemove(_finalizers, teardown);
+      if (teardown instanceof Subscription2) {
+        teardown._removeParent(this);
+      }
+    };
+    Subscription2.EMPTY = function() {
+      var empty = new Subscription2();
+      empty.closed = true;
+      return empty;
+    }();
+    return Subscription2;
+  }();
+  var EMPTY_SUBSCRIPTION = Subscription.EMPTY;
+  function isSubscription(value) {
+    return value instanceof Subscription || value && "closed" in value && isFunction(value.remove) && isFunction(value.add) && isFunction(value.unsubscribe);
+  }
+  function execFinalizer(finalizer) {
+    if (isFunction(finalizer)) {
+      finalizer();
+    } else {
+      finalizer.unsubscribe();
     }
-    render() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        // Background grid
-        ctx.fillStyle = "#0a0a0f";
-        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        ctx.strokeStyle = "rgba(255,255,255,0.03)";
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i <= GRID_SIZE; i++) {
-            ctx.beginPath();
-            ctx.moveTo(i * CELL_SIZE, 0);
-            ctx.lineTo(i * CELL_SIZE, CANVAS_SIZE);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(0, i * CELL_SIZE);
-            ctx.lineTo(CANVAS_SIZE, i * CELL_SIZE);
-            ctx.stroke();
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/config.js
+  var config = {
+    onUnhandledError: null,
+    onStoppedNotification: null,
+    Promise: void 0,
+    useDeprecatedSynchronousErrorHandling: false,
+    useDeprecatedNextContext: false
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/timeoutProvider.js
+  var timeoutProvider = {
+    setTimeout: function(handler, timeout) {
+      var args = [];
+      for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+      }
+      var delegate = timeoutProvider.delegate;
+      if (delegate === null || delegate === void 0 ? void 0 : delegate.setTimeout) {
+        return delegate.setTimeout.apply(delegate, __spreadArray([handler, timeout], __read(args)));
+      }
+      return setTimeout.apply(void 0, __spreadArray([handler, timeout], __read(args)));
+    },
+    clearTimeout: function(handle) {
+      var delegate = timeoutProvider.delegate;
+      return ((delegate === null || delegate === void 0 ? void 0 : delegate.clearTimeout) || clearTimeout)(handle);
+    },
+    delegate: void 0
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/util/reportUnhandledError.js
+  function reportUnhandledError(err) {
+    timeoutProvider.setTimeout(function() {
+      var onUnhandledError = config.onUnhandledError;
+      if (onUnhandledError) {
+        onUnhandledError(err);
+      } else {
+        throw err;
+      }
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/noop.js
+  function noop() {
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/NotificationFactories.js
+  var COMPLETE_NOTIFICATION = function() {
+    return createNotification("C", void 0, void 0);
+  }();
+  function errorNotification(error) {
+    return createNotification("E", void 0, error);
+  }
+  function nextNotification(value) {
+    return createNotification("N", value, void 0);
+  }
+  function createNotification(kind, value, error) {
+    return {
+      kind,
+      value,
+      error
+    };
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/errorContext.js
+  var context = null;
+  function errorContext(cb) {
+    if (config.useDeprecatedSynchronousErrorHandling) {
+      var isRoot = !context;
+      if (isRoot) {
+        context = { errorThrown: false, error: null };
+      }
+      cb();
+      if (isRoot) {
+        var _a = context, errorThrown = _a.errorThrown, error = _a.error;
+        context = null;
+        if (errorThrown) {
+          throw error;
         }
-        // Particles
-        this.particleSystem = this.particleSystem.filter(p => p.life > 0);
-        for (const p of this.particleSystem) {
-            p.update();
-            p.draw(ctx);
+      }
+    } else {
+      cb();
+    }
+  }
+  function captureError(err) {
+    if (config.useDeprecatedSynchronousErrorHandling && context) {
+      context.errorThrown = true;
+      context.error = err;
+    }
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/Subscriber.js
+  var Subscriber = function(_super) {
+    __extends(Subscriber2, _super);
+    function Subscriber2(destination) {
+      var _this = _super.call(this) || this;
+      _this.isStopped = false;
+      if (destination) {
+        _this.destination = destination;
+        if (isSubscription(destination)) {
+          destination.add(_this);
         }
-        if (this.state === "IDLE")
+      } else {
+        _this.destination = EMPTY_OBSERVER;
+      }
+      return _this;
+    }
+    Subscriber2.create = function(next, error, complete) {
+      return new SafeSubscriber(next, error, complete);
+    };
+    Subscriber2.prototype.next = function(value) {
+      if (this.isStopped) {
+        handleStoppedNotification(nextNotification(value), this);
+      } else {
+        this._next(value);
+      }
+    };
+    Subscriber2.prototype.error = function(err) {
+      if (this.isStopped) {
+        handleStoppedNotification(errorNotification(err), this);
+      } else {
+        this.isStopped = true;
+        this._error(err);
+      }
+    };
+    Subscriber2.prototype.complete = function() {
+      if (this.isStopped) {
+        handleStoppedNotification(COMPLETE_NOTIFICATION, this);
+      } else {
+        this.isStopped = true;
+        this._complete();
+      }
+    };
+    Subscriber2.prototype.unsubscribe = function() {
+      if (!this.closed) {
+        this.isStopped = true;
+        _super.prototype.unsubscribe.call(this);
+        this.destination = null;
+      }
+    };
+    Subscriber2.prototype._next = function(value) {
+      this.destination.next(value);
+    };
+    Subscriber2.prototype._error = function(err) {
+      try {
+        this.destination.error(err);
+      } finally {
+        this.unsubscribe();
+      }
+    };
+    Subscriber2.prototype._complete = function() {
+      try {
+        this.destination.complete();
+      } finally {
+        this.unsubscribe();
+      }
+    };
+    return Subscriber2;
+  }(Subscription);
+  var _bind = Function.prototype.bind;
+  function bind(fn, thisArg) {
+    return _bind.call(fn, thisArg);
+  }
+  var ConsumerObserver = function() {
+    function ConsumerObserver2(partialObserver) {
+      this.partialObserver = partialObserver;
+    }
+    ConsumerObserver2.prototype.next = function(value) {
+      var partialObserver = this.partialObserver;
+      if (partialObserver.next) {
+        try {
+          partialObserver.next(value);
+        } catch (error) {
+          handleUnhandledError(error);
+        }
+      }
+    };
+    ConsumerObserver2.prototype.error = function(err) {
+      var partialObserver = this.partialObserver;
+      if (partialObserver.error) {
+        try {
+          partialObserver.error(err);
+        } catch (error) {
+          handleUnhandledError(error);
+        }
+      } else {
+        handleUnhandledError(err);
+      }
+    };
+    ConsumerObserver2.prototype.complete = function() {
+      var partialObserver = this.partialObserver;
+      if (partialObserver.complete) {
+        try {
+          partialObserver.complete();
+        } catch (error) {
+          handleUnhandledError(error);
+        }
+      }
+    };
+    return ConsumerObserver2;
+  }();
+  var SafeSubscriber = function(_super) {
+    __extends(SafeSubscriber2, _super);
+    function SafeSubscriber2(observerOrNext, error, complete) {
+      var _this = _super.call(this) || this;
+      var partialObserver;
+      if (isFunction(observerOrNext) || !observerOrNext) {
+        partialObserver = {
+          next: observerOrNext !== null && observerOrNext !== void 0 ? observerOrNext : void 0,
+          error: error !== null && error !== void 0 ? error : void 0,
+          complete: complete !== null && complete !== void 0 ? complete : void 0
+        };
+      } else {
+        var context_1;
+        if (_this && config.useDeprecatedNextContext) {
+          context_1 = Object.create(observerOrNext);
+          context_1.unsubscribe = function() {
+            return _this.unsubscribe();
+          };
+          partialObserver = {
+            next: observerOrNext.next && bind(observerOrNext.next, context_1),
+            error: observerOrNext.error && bind(observerOrNext.error, context_1),
+            complete: observerOrNext.complete && bind(observerOrNext.complete, context_1)
+          };
+        } else {
+          partialObserver = observerOrNext;
+        }
+      }
+      _this.destination = new ConsumerObserver(partialObserver);
+      return _this;
+    }
+    return SafeSubscriber2;
+  }(Subscriber);
+  function handleUnhandledError(error) {
+    if (config.useDeprecatedSynchronousErrorHandling) {
+      captureError(error);
+    } else {
+      reportUnhandledError(error);
+    }
+  }
+  function defaultErrorHandler(err) {
+    throw err;
+  }
+  function handleStoppedNotification(notification, subscriber) {
+    var onStoppedNotification = config.onStoppedNotification;
+    onStoppedNotification && timeoutProvider.setTimeout(function() {
+      return onStoppedNotification(notification, subscriber);
+    });
+  }
+  var EMPTY_OBSERVER = {
+    closed: true,
+    next: noop,
+    error: defaultErrorHandler,
+    complete: noop
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/symbol/observable.js
+  var observable = function() {
+    return typeof Symbol === "function" && Symbol.observable || "@@observable";
+  }();
+
+  // node_modules/rxjs/dist/esm5/internal/util/identity.js
+  function identity(x) {
+    return x;
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/pipe.js
+  function pipeFromArray(fns) {
+    if (fns.length === 0) {
+      return identity;
+    }
+    if (fns.length === 1) {
+      return fns[0];
+    }
+    return function piped(input) {
+      return fns.reduce(function(prev, fn) {
+        return fn(prev);
+      }, input);
+    };
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/Observable.js
+  var Observable = function() {
+    function Observable2(subscribe) {
+      if (subscribe) {
+        this._subscribe = subscribe;
+      }
+    }
+    Observable2.prototype.lift = function(operator) {
+      var observable2 = new Observable2();
+      observable2.source = this;
+      observable2.operator = operator;
+      return observable2;
+    };
+    Observable2.prototype.subscribe = function(observerOrNext, error, complete) {
+      var _this = this;
+      var subscriber = isSubscriber(observerOrNext) ? observerOrNext : new SafeSubscriber(observerOrNext, error, complete);
+      errorContext(function() {
+        var _a = _this, operator = _a.operator, source = _a.source;
+        subscriber.add(operator ? operator.call(subscriber, source) : source ? _this._subscribe(subscriber) : _this._trySubscribe(subscriber));
+      });
+      return subscriber;
+    };
+    Observable2.prototype._trySubscribe = function(sink) {
+      try {
+        return this._subscribe(sink);
+      } catch (err) {
+        sink.error(err);
+      }
+    };
+    Observable2.prototype.forEach = function(next, promiseCtor) {
+      var _this = this;
+      promiseCtor = getPromiseCtor(promiseCtor);
+      return new promiseCtor(function(resolve, reject) {
+        var subscriber = new SafeSubscriber({
+          next: function(value) {
+            try {
+              next(value);
+            } catch (err) {
+              reject(err);
+              subscriber.unsubscribe();
+            }
+          },
+          error: reject,
+          complete: resolve
+        });
+        _this.subscribe(subscriber);
+      });
+    };
+    Observable2.prototype._subscribe = function(subscriber) {
+      var _a;
+      return (_a = this.source) === null || _a === void 0 ? void 0 : _a.subscribe(subscriber);
+    };
+    Observable2.prototype[observable] = function() {
+      return this;
+    };
+    Observable2.prototype.pipe = function() {
+      var operations = [];
+      for (var _i = 0; _i < arguments.length; _i++) {
+        operations[_i] = arguments[_i];
+      }
+      return pipeFromArray(operations)(this);
+    };
+    Observable2.prototype.toPromise = function(promiseCtor) {
+      var _this = this;
+      promiseCtor = getPromiseCtor(promiseCtor);
+      return new promiseCtor(function(resolve, reject) {
+        var value;
+        _this.subscribe(function(x) {
+          return value = x;
+        }, function(err) {
+          return reject(err);
+        }, function() {
+          return resolve(value);
+        });
+      });
+    };
+    Observable2.create = function(subscribe) {
+      return new Observable2(subscribe);
+    };
+    return Observable2;
+  }();
+  function getPromiseCtor(promiseCtor) {
+    var _a;
+    return (_a = promiseCtor !== null && promiseCtor !== void 0 ? promiseCtor : config.Promise) !== null && _a !== void 0 ? _a : Promise;
+  }
+  function isObserver(value) {
+    return value && isFunction(value.next) && isFunction(value.error) && isFunction(value.complete);
+  }
+  function isSubscriber(value) {
+    return value && value instanceof Subscriber || isObserver(value) && isSubscription(value);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/lift.js
+  function hasLift(source) {
+    return isFunction(source === null || source === void 0 ? void 0 : source.lift);
+  }
+  function operate(init) {
+    return function(source) {
+      if (hasLift(source)) {
+        return source.lift(function(liftedSource) {
+          try {
+            return init(liftedSource, this);
+          } catch (err) {
+            this.error(err);
+          }
+        });
+      }
+      throw new TypeError("Unable to lift unknown Observable type");
+    };
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/OperatorSubscriber.js
+  function createOperatorSubscriber(destination, onNext, onComplete, onError, onFinalize) {
+    return new OperatorSubscriber(destination, onNext, onComplete, onError, onFinalize);
+  }
+  var OperatorSubscriber = function(_super) {
+    __extends(OperatorSubscriber2, _super);
+    function OperatorSubscriber2(destination, onNext, onComplete, onError, onFinalize, shouldUnsubscribe) {
+      var _this = _super.call(this, destination) || this;
+      _this.onFinalize = onFinalize;
+      _this.shouldUnsubscribe = shouldUnsubscribe;
+      _this._next = onNext ? function(value) {
+        try {
+          onNext(value);
+        } catch (err) {
+          destination.error(err);
+        }
+      } : _super.prototype._next;
+      _this._error = onError ? function(err) {
+        try {
+          onError(err);
+        } catch (err2) {
+          destination.error(err2);
+        } finally {
+          this.unsubscribe();
+        }
+      } : _super.prototype._error;
+      _this._complete = onComplete ? function() {
+        try {
+          onComplete();
+        } catch (err) {
+          destination.error(err);
+        } finally {
+          this.unsubscribe();
+        }
+      } : _super.prototype._complete;
+      return _this;
+    }
+    OperatorSubscriber2.prototype.unsubscribe = function() {
+      var _a;
+      if (!this.shouldUnsubscribe || this.shouldUnsubscribe()) {
+        var closed_1 = this.closed;
+        _super.prototype.unsubscribe.call(this);
+        !closed_1 && ((_a = this.onFinalize) === null || _a === void 0 ? void 0 : _a.call(this));
+      }
+    };
+    return OperatorSubscriber2;
+  }(Subscriber);
+
+  // node_modules/rxjs/dist/esm5/internal/util/ObjectUnsubscribedError.js
+  var ObjectUnsubscribedError = createErrorClass(function(_super) {
+    return function ObjectUnsubscribedErrorImpl() {
+      _super(this);
+      this.name = "ObjectUnsubscribedError";
+      this.message = "object unsubscribed";
+    };
+  });
+
+  // node_modules/rxjs/dist/esm5/internal/Subject.js
+  var Subject = function(_super) {
+    __extends(Subject2, _super);
+    function Subject2() {
+      var _this = _super.call(this) || this;
+      _this.closed = false;
+      _this.currentObservers = null;
+      _this.observers = [];
+      _this.isStopped = false;
+      _this.hasError = false;
+      _this.thrownError = null;
+      return _this;
+    }
+    Subject2.prototype.lift = function(operator) {
+      var subject = new AnonymousSubject(this, this);
+      subject.operator = operator;
+      return subject;
+    };
+    Subject2.prototype._throwIfClosed = function() {
+      if (this.closed) {
+        throw new ObjectUnsubscribedError();
+      }
+    };
+    Subject2.prototype.next = function(value) {
+      var _this = this;
+      errorContext(function() {
+        var e_1, _a;
+        _this._throwIfClosed();
+        if (!_this.isStopped) {
+          if (!_this.currentObservers) {
+            _this.currentObservers = Array.from(_this.observers);
+          }
+          try {
+            for (var _b = __values(_this.currentObservers), _c = _b.next(); !_c.done; _c = _b.next()) {
+              var observer = _c.value;
+              observer.next(value);
+            }
+          } catch (e_1_1) {
+            e_1 = { error: e_1_1 };
+          } finally {
+            try {
+              if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+            } finally {
+              if (e_1) throw e_1.error;
+            }
+          }
+        }
+      });
+    };
+    Subject2.prototype.error = function(err) {
+      var _this = this;
+      errorContext(function() {
+        _this._throwIfClosed();
+        if (!_this.isStopped) {
+          _this.hasError = _this.isStopped = true;
+          _this.thrownError = err;
+          var observers = _this.observers;
+          while (observers.length) {
+            observers.shift().error(err);
+          }
+        }
+      });
+    };
+    Subject2.prototype.complete = function() {
+      var _this = this;
+      errorContext(function() {
+        _this._throwIfClosed();
+        if (!_this.isStopped) {
+          _this.isStopped = true;
+          var observers = _this.observers;
+          while (observers.length) {
+            observers.shift().complete();
+          }
+        }
+      });
+    };
+    Subject2.prototype.unsubscribe = function() {
+      this.isStopped = this.closed = true;
+      this.observers = this.currentObservers = null;
+    };
+    Object.defineProperty(Subject2.prototype, "observed", {
+      get: function() {
+        var _a;
+        return ((_a = this.observers) === null || _a === void 0 ? void 0 : _a.length) > 0;
+      },
+      enumerable: false,
+      configurable: true
+    });
+    Subject2.prototype._trySubscribe = function(subscriber) {
+      this._throwIfClosed();
+      return _super.prototype._trySubscribe.call(this, subscriber);
+    };
+    Subject2.prototype._subscribe = function(subscriber) {
+      this._throwIfClosed();
+      this._checkFinalizedStatuses(subscriber);
+      return this._innerSubscribe(subscriber);
+    };
+    Subject2.prototype._innerSubscribe = function(subscriber) {
+      var _this = this;
+      var _a = this, hasError = _a.hasError, isStopped = _a.isStopped, observers = _a.observers;
+      if (hasError || isStopped) {
+        return EMPTY_SUBSCRIPTION;
+      }
+      this.currentObservers = null;
+      observers.push(subscriber);
+      return new Subscription(function() {
+        _this.currentObservers = null;
+        arrRemove(observers, subscriber);
+      });
+    };
+    Subject2.prototype._checkFinalizedStatuses = function(subscriber) {
+      var _a = this, hasError = _a.hasError, thrownError = _a.thrownError, isStopped = _a.isStopped;
+      if (hasError) {
+        subscriber.error(thrownError);
+      } else if (isStopped) {
+        subscriber.complete();
+      }
+    };
+    Subject2.prototype.asObservable = function() {
+      var observable2 = new Observable();
+      observable2.source = this;
+      return observable2;
+    };
+    Subject2.create = function(destination, source) {
+      return new AnonymousSubject(destination, source);
+    };
+    return Subject2;
+  }(Observable);
+  var AnonymousSubject = function(_super) {
+    __extends(AnonymousSubject2, _super);
+    function AnonymousSubject2(destination, source) {
+      var _this = _super.call(this) || this;
+      _this.destination = destination;
+      _this.source = source;
+      return _this;
+    }
+    AnonymousSubject2.prototype.next = function(value) {
+      var _a, _b;
+      (_b = (_a = this.destination) === null || _a === void 0 ? void 0 : _a.next) === null || _b === void 0 ? void 0 : _b.call(_a, value);
+    };
+    AnonymousSubject2.prototype.error = function(err) {
+      var _a, _b;
+      (_b = (_a = this.destination) === null || _a === void 0 ? void 0 : _a.error) === null || _b === void 0 ? void 0 : _b.call(_a, err);
+    };
+    AnonymousSubject2.prototype.complete = function() {
+      var _a, _b;
+      (_b = (_a = this.destination) === null || _a === void 0 ? void 0 : _a.complete) === null || _b === void 0 ? void 0 : _b.call(_a);
+    };
+    AnonymousSubject2.prototype._subscribe = function(subscriber) {
+      var _a, _b;
+      return (_b = (_a = this.source) === null || _a === void 0 ? void 0 : _a.subscribe(subscriber)) !== null && _b !== void 0 ? _b : EMPTY_SUBSCRIPTION;
+    };
+    return AnonymousSubject2;
+  }(Subject);
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/dateTimestampProvider.js
+  var dateTimestampProvider = {
+    now: function() {
+      return (dateTimestampProvider.delegate || Date).now();
+    },
+    delegate: void 0
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/ReplaySubject.js
+  var ReplaySubject = function(_super) {
+    __extends(ReplaySubject2, _super);
+    function ReplaySubject2(_bufferSize, _windowTime, _timestampProvider) {
+      if (_bufferSize === void 0) {
+        _bufferSize = Infinity;
+      }
+      if (_windowTime === void 0) {
+        _windowTime = Infinity;
+      }
+      if (_timestampProvider === void 0) {
+        _timestampProvider = dateTimestampProvider;
+      }
+      var _this = _super.call(this) || this;
+      _this._bufferSize = _bufferSize;
+      _this._windowTime = _windowTime;
+      _this._timestampProvider = _timestampProvider;
+      _this._buffer = [];
+      _this._infiniteTimeWindow = true;
+      _this._infiniteTimeWindow = _windowTime === Infinity;
+      _this._bufferSize = Math.max(1, _bufferSize);
+      _this._windowTime = Math.max(1, _windowTime);
+      return _this;
+    }
+    ReplaySubject2.prototype.next = function(value) {
+      var _a = this, isStopped = _a.isStopped, _buffer = _a._buffer, _infiniteTimeWindow = _a._infiniteTimeWindow, _timestampProvider = _a._timestampProvider, _windowTime = _a._windowTime;
+      if (!isStopped) {
+        _buffer.push(value);
+        !_infiniteTimeWindow && _buffer.push(_timestampProvider.now() + _windowTime);
+      }
+      this._trimBuffer();
+      _super.prototype.next.call(this, value);
+    };
+    ReplaySubject2.prototype._subscribe = function(subscriber) {
+      this._throwIfClosed();
+      this._trimBuffer();
+      var subscription = this._innerSubscribe(subscriber);
+      var _a = this, _infiniteTimeWindow = _a._infiniteTimeWindow, _buffer = _a._buffer;
+      var copy = _buffer.slice();
+      for (var i = 0; i < copy.length && !subscriber.closed; i += _infiniteTimeWindow ? 1 : 2) {
+        subscriber.next(copy[i]);
+      }
+      this._checkFinalizedStatuses(subscriber);
+      return subscription;
+    };
+    ReplaySubject2.prototype._trimBuffer = function() {
+      var _a = this, _bufferSize = _a._bufferSize, _timestampProvider = _a._timestampProvider, _buffer = _a._buffer, _infiniteTimeWindow = _a._infiniteTimeWindow;
+      var adjustedBufferSize = (_infiniteTimeWindow ? 1 : 2) * _bufferSize;
+      _bufferSize < Infinity && adjustedBufferSize < _buffer.length && _buffer.splice(0, _buffer.length - adjustedBufferSize);
+      if (!_infiniteTimeWindow) {
+        var now = _timestampProvider.now();
+        var last2 = 0;
+        for (var i = 1; i < _buffer.length && _buffer[i] <= now; i += 2) {
+          last2 = i;
+        }
+        last2 && _buffer.splice(0, last2 + 1);
+      }
+    };
+    return ReplaySubject2;
+  }(Subject);
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/Action.js
+  var Action = function(_super) {
+    __extends(Action2, _super);
+    function Action2(scheduler, work) {
+      return _super.call(this) || this;
+    }
+    Action2.prototype.schedule = function(state, delay) {
+      if (delay === void 0) {
+        delay = 0;
+      }
+      return this;
+    };
+    return Action2;
+  }(Subscription);
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/intervalProvider.js
+  var intervalProvider = {
+    setInterval: function(handler, timeout) {
+      var args = [];
+      for (var _i = 2; _i < arguments.length; _i++) {
+        args[_i - 2] = arguments[_i];
+      }
+      var delegate = intervalProvider.delegate;
+      if (delegate === null || delegate === void 0 ? void 0 : delegate.setInterval) {
+        return delegate.setInterval.apply(delegate, __spreadArray([handler, timeout], __read(args)));
+      }
+      return setInterval.apply(void 0, __spreadArray([handler, timeout], __read(args)));
+    },
+    clearInterval: function(handle) {
+      var delegate = intervalProvider.delegate;
+      return ((delegate === null || delegate === void 0 ? void 0 : delegate.clearInterval) || clearInterval)(handle);
+    },
+    delegate: void 0
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/AsyncAction.js
+  var AsyncAction = function(_super) {
+    __extends(AsyncAction2, _super);
+    function AsyncAction2(scheduler, work) {
+      var _this = _super.call(this, scheduler, work) || this;
+      _this.scheduler = scheduler;
+      _this.work = work;
+      _this.pending = false;
+      return _this;
+    }
+    AsyncAction2.prototype.schedule = function(state, delay) {
+      var _a;
+      if (delay === void 0) {
+        delay = 0;
+      }
+      if (this.closed) {
+        return this;
+      }
+      this.state = state;
+      var id = this.id;
+      var scheduler = this.scheduler;
+      if (id != null) {
+        this.id = this.recycleAsyncId(scheduler, id, delay);
+      }
+      this.pending = true;
+      this.delay = delay;
+      this.id = (_a = this.id) !== null && _a !== void 0 ? _a : this.requestAsyncId(scheduler, this.id, delay);
+      return this;
+    };
+    AsyncAction2.prototype.requestAsyncId = function(scheduler, _id, delay) {
+      if (delay === void 0) {
+        delay = 0;
+      }
+      return intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay);
+    };
+    AsyncAction2.prototype.recycleAsyncId = function(_scheduler, id, delay) {
+      if (delay === void 0) {
+        delay = 0;
+      }
+      if (delay != null && this.delay === delay && this.pending === false) {
+        return id;
+      }
+      if (id != null) {
+        intervalProvider.clearInterval(id);
+      }
+      return void 0;
+    };
+    AsyncAction2.prototype.execute = function(state, delay) {
+      if (this.closed) {
+        return new Error("executing a cancelled action");
+      }
+      this.pending = false;
+      var error = this._execute(state, delay);
+      if (error) {
+        return error;
+      } else if (this.pending === false && this.id != null) {
+        this.id = this.recycleAsyncId(this.scheduler, this.id, null);
+      }
+    };
+    AsyncAction2.prototype._execute = function(state, _delay) {
+      var errored = false;
+      var errorValue;
+      try {
+        this.work(state);
+      } catch (e) {
+        errored = true;
+        errorValue = e ? e : new Error("Scheduled action threw falsy error");
+      }
+      if (errored) {
+        this.unsubscribe();
+        return errorValue;
+      }
+    };
+    AsyncAction2.prototype.unsubscribe = function() {
+      if (!this.closed) {
+        var _a = this, id = _a.id, scheduler = _a.scheduler;
+        var actions = scheduler.actions;
+        this.work = this.state = this.scheduler = null;
+        this.pending = false;
+        arrRemove(actions, this);
+        if (id != null) {
+          this.id = this.recycleAsyncId(scheduler, id, null);
+        }
+        this.delay = null;
+        _super.prototype.unsubscribe.call(this);
+      }
+    };
+    return AsyncAction2;
+  }(Action);
+
+  // node_modules/rxjs/dist/esm5/internal/Scheduler.js
+  var Scheduler = function() {
+    function Scheduler2(schedulerActionCtor, now) {
+      if (now === void 0) {
+        now = Scheduler2.now;
+      }
+      this.schedulerActionCtor = schedulerActionCtor;
+      this.now = now;
+    }
+    Scheduler2.prototype.schedule = function(work, delay, state) {
+      if (delay === void 0) {
+        delay = 0;
+      }
+      return new this.schedulerActionCtor(this, work).schedule(state, delay);
+    };
+    Scheduler2.now = dateTimestampProvider.now;
+    return Scheduler2;
+  }();
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/AsyncScheduler.js
+  var AsyncScheduler = function(_super) {
+    __extends(AsyncScheduler2, _super);
+    function AsyncScheduler2(SchedulerAction, now) {
+      if (now === void 0) {
+        now = Scheduler.now;
+      }
+      var _this = _super.call(this, SchedulerAction, now) || this;
+      _this.actions = [];
+      _this._active = false;
+      return _this;
+    }
+    AsyncScheduler2.prototype.flush = function(action) {
+      var actions = this.actions;
+      if (this._active) {
+        actions.push(action);
+        return;
+      }
+      var error;
+      this._active = true;
+      do {
+        if (error = action.execute(action.state, action.delay)) {
+          break;
+        }
+      } while (action = actions.shift());
+      this._active = false;
+      if (error) {
+        while (action = actions.shift()) {
+          action.unsubscribe();
+        }
+        throw error;
+      }
+    };
+    return AsyncScheduler2;
+  }(Scheduler);
+
+  // node_modules/rxjs/dist/esm5/internal/scheduler/async.js
+  var asyncScheduler = new AsyncScheduler(AsyncAction);
+  var async = asyncScheduler;
+
+  // node_modules/rxjs/dist/esm5/internal/observable/empty.js
+  var EMPTY = new Observable(function(subscriber) {
+    return subscriber.complete();
+  });
+
+  // node_modules/rxjs/dist/esm5/internal/util/isScheduler.js
+  function isScheduler(value) {
+    return value && isFunction(value.schedule);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/args.js
+  function last(arr) {
+    return arr[arr.length - 1];
+  }
+  function popResultSelector(args) {
+    return isFunction(last(args)) ? args.pop() : void 0;
+  }
+  function popScheduler(args) {
+    return isScheduler(last(args)) ? args.pop() : void 0;
+  }
+  function popNumber(args, defaultValue) {
+    return typeof last(args) === "number" ? args.pop() : defaultValue;
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isArrayLike.js
+  var isArrayLike = function(x) {
+    return x && typeof x.length === "number" && typeof x !== "function";
+  };
+
+  // node_modules/rxjs/dist/esm5/internal/util/isPromise.js
+  function isPromise(value) {
+    return isFunction(value === null || value === void 0 ? void 0 : value.then);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isInteropObservable.js
+  function isInteropObservable(input) {
+    return isFunction(input[observable]);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isAsyncIterable.js
+  function isAsyncIterable(obj) {
+    return Symbol.asyncIterator && isFunction(obj === null || obj === void 0 ? void 0 : obj[Symbol.asyncIterator]);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/throwUnobservableError.js
+  function createInvalidObservableTypeError(input) {
+    return new TypeError("You provided " + (input !== null && typeof input === "object" ? "an invalid object" : "'" + input + "'") + " where a stream was expected. You can provide an Observable, Promise, ReadableStream, Array, AsyncIterable, or Iterable.");
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/symbol/iterator.js
+  function getSymbolIterator() {
+    if (typeof Symbol !== "function" || !Symbol.iterator) {
+      return "@@iterator";
+    }
+    return Symbol.iterator;
+  }
+  var iterator = getSymbolIterator();
+
+  // node_modules/rxjs/dist/esm5/internal/util/isIterable.js
+  function isIterable(input) {
+    return isFunction(input === null || input === void 0 ? void 0 : input[iterator]);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isReadableStreamLike.js
+  function readableStreamLikeToAsyncGenerator(readableStream) {
+    return __asyncGenerator(this, arguments, function readableStreamLikeToAsyncGenerator_1() {
+      var reader, _a, value, done;
+      return __generator(this, function(_b) {
+        switch (_b.label) {
+          case 0:
+            reader = readableStream.getReader();
+            _b.label = 1;
+          case 1:
+            _b.trys.push([1, , 9, 10]);
+            _b.label = 2;
+          case 2:
+            if (false) return [3, 8];
+            return [4, __await(reader.read())];
+          case 3:
+            _a = _b.sent(), value = _a.value, done = _a.done;
+            if (!done) return [3, 5];
+            return [4, __await(void 0)];
+          case 4:
+            return [2, _b.sent()];
+          case 5:
+            return [4, __await(value)];
+          case 6:
+            return [4, _b.sent()];
+          case 7:
+            _b.sent();
+            return [3, 2];
+          case 8:
+            return [3, 10];
+          case 9:
+            reader.releaseLock();
+            return [7];
+          case 10:
+            return [2];
+        }
+      });
+    });
+  }
+  function isReadableStreamLike(obj) {
+    return isFunction(obj === null || obj === void 0 ? void 0 : obj.getReader);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/innerFrom.js
+  function innerFrom(input) {
+    if (input instanceof Observable) {
+      return input;
+    }
+    if (input != null) {
+      if (isInteropObservable(input)) {
+        return fromInteropObservable(input);
+      }
+      if (isArrayLike(input)) {
+        return fromArrayLike(input);
+      }
+      if (isPromise(input)) {
+        return fromPromise(input);
+      }
+      if (isAsyncIterable(input)) {
+        return fromAsyncIterable(input);
+      }
+      if (isIterable(input)) {
+        return fromIterable(input);
+      }
+      if (isReadableStreamLike(input)) {
+        return fromReadableStreamLike(input);
+      }
+    }
+    throw createInvalidObservableTypeError(input);
+  }
+  function fromInteropObservable(obj) {
+    return new Observable(function(subscriber) {
+      var obs = obj[observable]();
+      if (isFunction(obs.subscribe)) {
+        return obs.subscribe(subscriber);
+      }
+      throw new TypeError("Provided object does not correctly implement Symbol.observable");
+    });
+  }
+  function fromArrayLike(array) {
+    return new Observable(function(subscriber) {
+      for (var i = 0; i < array.length && !subscriber.closed; i++) {
+        subscriber.next(array[i]);
+      }
+      subscriber.complete();
+    });
+  }
+  function fromPromise(promise) {
+    return new Observable(function(subscriber) {
+      promise.then(function(value) {
+        if (!subscriber.closed) {
+          subscriber.next(value);
+          subscriber.complete();
+        }
+      }, function(err) {
+        return subscriber.error(err);
+      }).then(null, reportUnhandledError);
+    });
+  }
+  function fromIterable(iterable) {
+    return new Observable(function(subscriber) {
+      var e_1, _a;
+      try {
+        for (var iterable_1 = __values(iterable), iterable_1_1 = iterable_1.next(); !iterable_1_1.done; iterable_1_1 = iterable_1.next()) {
+          var value = iterable_1_1.value;
+          subscriber.next(value);
+          if (subscriber.closed) {
             return;
-        // Food
-        const fx = this.food.x * CELL_SIZE + CELL_SIZE / 2;
-        const fy = this.food.y * CELL_SIZE + CELL_SIZE / 2;
-        const pulse = 0.85 + 0.15 * Math.sin(this.frame * 0.15);
-        const fr = (CELL_SIZE / 2 - 2) * pulse;
-        const foodGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
-        foodGrad.addColorStop(0, "#fff7ed");
-        foodGrad.addColorStop(0.4, "#f97316");
-        foodGrad.addColorStop(1, "#c2410c");
-        ctx.shadowBlur = 16;
-        ctx.shadowColor = "#f97316";
-        ctx.beginPath();
-        ctx.arc(fx, fy, fr, 0, Math.PI * 2);
-        ctx.fillStyle = foodGrad;
+          }
+        }
+      } catch (e_1_1) {
+        e_1 = { error: e_1_1 };
+      } finally {
+        try {
+          if (iterable_1_1 && !iterable_1_1.done && (_a = iterable_1.return)) _a.call(iterable_1);
+        } finally {
+          if (e_1) throw e_1.error;
+        }
+      }
+      subscriber.complete();
+    });
+  }
+  function fromAsyncIterable(asyncIterable) {
+    return new Observable(function(subscriber) {
+      process(asyncIterable, subscriber).catch(function(err) {
+        return subscriber.error(err);
+      });
+    });
+  }
+  function fromReadableStreamLike(readableStream) {
+    return fromAsyncIterable(readableStreamLikeToAsyncGenerator(readableStream));
+  }
+  function process(asyncIterable, subscriber) {
+    var asyncIterable_1, asyncIterable_1_1;
+    var e_2, _a;
+    return __awaiter(this, void 0, void 0, function() {
+      var value, e_2_1;
+      return __generator(this, function(_b) {
+        switch (_b.label) {
+          case 0:
+            _b.trys.push([0, 5, 6, 11]);
+            asyncIterable_1 = __asyncValues(asyncIterable);
+            _b.label = 1;
+          case 1:
+            return [4, asyncIterable_1.next()];
+          case 2:
+            if (!(asyncIterable_1_1 = _b.sent(), !asyncIterable_1_1.done)) return [3, 4];
+            value = asyncIterable_1_1.value;
+            subscriber.next(value);
+            if (subscriber.closed) {
+              return [2];
+            }
+            _b.label = 3;
+          case 3:
+            return [3, 1];
+          case 4:
+            return [3, 11];
+          case 5:
+            e_2_1 = _b.sent();
+            e_2 = { error: e_2_1 };
+            return [3, 11];
+          case 6:
+            _b.trys.push([6, , 9, 10]);
+            if (!(asyncIterable_1_1 && !asyncIterable_1_1.done && (_a = asyncIterable_1.return))) return [3, 8];
+            return [4, _a.call(asyncIterable_1)];
+          case 7:
+            _b.sent();
+            _b.label = 8;
+          case 8:
+            return [3, 10];
+          case 9:
+            if (e_2) throw e_2.error;
+            return [7];
+          case 10:
+            return [7];
+          case 11:
+            subscriber.complete();
+            return [2];
+        }
+      });
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/executeSchedule.js
+  function executeSchedule(parentSubscription, scheduler, work, delay, repeat) {
+    if (delay === void 0) {
+      delay = 0;
+    }
+    if (repeat === void 0) {
+      repeat = false;
+    }
+    var scheduleSubscription = scheduler.schedule(function() {
+      work();
+      if (repeat) {
+        parentSubscription.add(this.schedule(null, delay));
+      } else {
+        this.unsubscribe();
+      }
+    }, delay);
+    parentSubscription.add(scheduleSubscription);
+    if (!repeat) {
+      return scheduleSubscription;
+    }
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/observeOn.js
+  function observeOn(scheduler, delay) {
+    if (delay === void 0) {
+      delay = 0;
+    }
+    return operate(function(source, subscriber) {
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        return executeSchedule(subscriber, scheduler, function() {
+          return subscriber.next(value);
+        }, delay);
+      }, function() {
+        return executeSchedule(subscriber, scheduler, function() {
+          return subscriber.complete();
+        }, delay);
+      }, function(err) {
+        return executeSchedule(subscriber, scheduler, function() {
+          return subscriber.error(err);
+        }, delay);
+      }));
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/subscribeOn.js
+  function subscribeOn(scheduler, delay) {
+    if (delay === void 0) {
+      delay = 0;
+    }
+    return operate(function(source, subscriber) {
+      subscriber.add(scheduler.schedule(function() {
+        return source.subscribe(subscriber);
+      }, delay));
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduleObservable.js
+  function scheduleObservable(input, scheduler) {
+    return innerFrom(input).pipe(subscribeOn(scheduler), observeOn(scheduler));
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/schedulePromise.js
+  function schedulePromise(input, scheduler) {
+    return innerFrom(input).pipe(subscribeOn(scheduler), observeOn(scheduler));
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduleArray.js
+  function scheduleArray(input, scheduler) {
+    return new Observable(function(subscriber) {
+      var i = 0;
+      return scheduler.schedule(function() {
+        if (i === input.length) {
+          subscriber.complete();
+        } else {
+          subscriber.next(input[i++]);
+          if (!subscriber.closed) {
+            this.schedule();
+          }
+        }
+      });
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduleIterable.js
+  function scheduleIterable(input, scheduler) {
+    return new Observable(function(subscriber) {
+      var iterator2;
+      executeSchedule(subscriber, scheduler, function() {
+        iterator2 = input[iterator]();
+        executeSchedule(subscriber, scheduler, function() {
+          var _a;
+          var value;
+          var done;
+          try {
+            _a = iterator2.next(), value = _a.value, done = _a.done;
+          } catch (err) {
+            subscriber.error(err);
+            return;
+          }
+          if (done) {
+            subscriber.complete();
+          } else {
+            subscriber.next(value);
+          }
+        }, 0, true);
+      });
+      return function() {
+        return isFunction(iterator2 === null || iterator2 === void 0 ? void 0 : iterator2.return) && iterator2.return();
+      };
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduleAsyncIterable.js
+  function scheduleAsyncIterable(input, scheduler) {
+    if (!input) {
+      throw new Error("Iterable cannot be null");
+    }
+    return new Observable(function(subscriber) {
+      executeSchedule(subscriber, scheduler, function() {
+        var iterator2 = input[Symbol.asyncIterator]();
+        executeSchedule(subscriber, scheduler, function() {
+          iterator2.next().then(function(result) {
+            if (result.done) {
+              subscriber.complete();
+            } else {
+              subscriber.next(result.value);
+            }
+          });
+        }, 0, true);
+      });
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduleReadableStreamLike.js
+  function scheduleReadableStreamLike(input, scheduler) {
+    return scheduleAsyncIterable(readableStreamLikeToAsyncGenerator(input), scheduler);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/scheduled/scheduled.js
+  function scheduled(input, scheduler) {
+    if (input != null) {
+      if (isInteropObservable(input)) {
+        return scheduleObservable(input, scheduler);
+      }
+      if (isArrayLike(input)) {
+        return scheduleArray(input, scheduler);
+      }
+      if (isPromise(input)) {
+        return schedulePromise(input, scheduler);
+      }
+      if (isAsyncIterable(input)) {
+        return scheduleAsyncIterable(input, scheduler);
+      }
+      if (isIterable(input)) {
+        return scheduleIterable(input, scheduler);
+      }
+      if (isReadableStreamLike(input)) {
+        return scheduleReadableStreamLike(input, scheduler);
+      }
+    }
+    throw createInvalidObservableTypeError(input);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/from.js
+  function from(input, scheduler) {
+    return scheduler ? scheduled(input, scheduler) : innerFrom(input);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/isDate.js
+  function isValidDate(value) {
+    return value instanceof Date && !isNaN(value);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/map.js
+  function map(project, thisArg) {
+    return operate(function(source, subscriber) {
+      var index = 0;
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        subscriber.next(project.call(thisArg, value, index++));
+      }));
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/util/mapOneOrManyArgs.js
+  var isArray = Array.isArray;
+  function callOrApply(fn, args) {
+    return isArray(args) ? fn.apply(void 0, __spreadArray([], __read(args))) : fn(args);
+  }
+  function mapOneOrManyArgs(fn) {
+    return map(function(args) {
+      return callOrApply(fn, args);
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/mergeInternals.js
+  function mergeInternals(source, subscriber, project, concurrent, onBeforeNext, expand, innerSubScheduler, additionalFinalizer) {
+    var buffer = [];
+    var active = 0;
+    var index = 0;
+    var isComplete = false;
+    var checkComplete = function() {
+      if (isComplete && !buffer.length && !active) {
+        subscriber.complete();
+      }
+    };
+    var outerNext = function(value) {
+      return active < concurrent ? doInnerSub(value) : buffer.push(value);
+    };
+    var doInnerSub = function(value) {
+      expand && subscriber.next(value);
+      active++;
+      var innerComplete = false;
+      innerFrom(project(value, index++)).subscribe(createOperatorSubscriber(subscriber, function(innerValue) {
+        onBeforeNext === null || onBeforeNext === void 0 ? void 0 : onBeforeNext(innerValue);
+        if (expand) {
+          outerNext(innerValue);
+        } else {
+          subscriber.next(innerValue);
+        }
+      }, function() {
+        innerComplete = true;
+      }, void 0, function() {
+        if (innerComplete) {
+          try {
+            active--;
+            var _loop_1 = function() {
+              var bufferedValue = buffer.shift();
+              if (innerSubScheduler) {
+                executeSchedule(subscriber, innerSubScheduler, function() {
+                  return doInnerSub(bufferedValue);
+                });
+              } else {
+                doInnerSub(bufferedValue);
+              }
+            };
+            while (buffer.length && active < concurrent) {
+              _loop_1();
+            }
+            checkComplete();
+          } catch (err) {
+            subscriber.error(err);
+          }
+        }
+      }));
+    };
+    source.subscribe(createOperatorSubscriber(subscriber, outerNext, function() {
+      isComplete = true;
+      checkComplete();
+    }));
+    return function() {
+      additionalFinalizer === null || additionalFinalizer === void 0 ? void 0 : additionalFinalizer();
+    };
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/mergeMap.js
+  function mergeMap(project, resultSelector, concurrent) {
+    if (concurrent === void 0) {
+      concurrent = Infinity;
+    }
+    if (isFunction(resultSelector)) {
+      return mergeMap(function(a, i) {
+        return map(function(b, ii) {
+          return resultSelector(a, b, i, ii);
+        })(innerFrom(project(a, i)));
+      }, concurrent);
+    } else if (typeof resultSelector === "number") {
+      concurrent = resultSelector;
+    }
+    return operate(function(source, subscriber) {
+      return mergeInternals(source, subscriber, project, concurrent);
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/mergeAll.js
+  function mergeAll(concurrent) {
+    if (concurrent === void 0) {
+      concurrent = Infinity;
+    }
+    return mergeMap(identity, concurrent);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/concatAll.js
+  function concatAll() {
+    return mergeAll(1);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/concat.js
+  function concat() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+      args[_i] = arguments[_i];
+    }
+    return concatAll()(from(args, popScheduler(args)));
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/fromEvent.js
+  var nodeEventEmitterMethods = ["addListener", "removeListener"];
+  var eventTargetMethods = ["addEventListener", "removeEventListener"];
+  var jqueryMethods = ["on", "off"];
+  function fromEvent(target, eventName, options, resultSelector) {
+    if (isFunction(options)) {
+      resultSelector = options;
+      options = void 0;
+    }
+    if (resultSelector) {
+      return fromEvent(target, eventName, options).pipe(mapOneOrManyArgs(resultSelector));
+    }
+    var _a = __read(isEventTarget(target) ? eventTargetMethods.map(function(methodName) {
+      return function(handler) {
+        return target[methodName](eventName, handler, options);
+      };
+    }) : isNodeStyleEventEmitter(target) ? nodeEventEmitterMethods.map(toCommonHandlerRegistry(target, eventName)) : isJQueryStyleEventEmitter(target) ? jqueryMethods.map(toCommonHandlerRegistry(target, eventName)) : [], 2), add = _a[0], remove = _a[1];
+    if (!add) {
+      if (isArrayLike(target)) {
+        return mergeMap(function(subTarget) {
+          return fromEvent(subTarget, eventName, options);
+        })(innerFrom(target));
+      }
+    }
+    if (!add) {
+      throw new TypeError("Invalid event target");
+    }
+    return new Observable(function(subscriber) {
+      var handler = function() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+          args[_i] = arguments[_i];
+        }
+        return subscriber.next(1 < args.length ? args : args[0]);
+      };
+      add(handler);
+      return function() {
+        return remove(handler);
+      };
+    });
+  }
+  function toCommonHandlerRegistry(target, eventName) {
+    return function(methodName) {
+      return function(handler) {
+        return target[methodName](eventName, handler);
+      };
+    };
+  }
+  function isNodeStyleEventEmitter(target) {
+    return isFunction(target.addListener) && isFunction(target.removeListener);
+  }
+  function isJQueryStyleEventEmitter(target) {
+    return isFunction(target.on) && isFunction(target.off);
+  }
+  function isEventTarget(target) {
+    return isFunction(target.addEventListener) && isFunction(target.removeEventListener);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/timer.js
+  function timer(dueTime, intervalOrScheduler, scheduler) {
+    if (dueTime === void 0) {
+      dueTime = 0;
+    }
+    if (scheduler === void 0) {
+      scheduler = async;
+    }
+    var intervalDuration = -1;
+    if (intervalOrScheduler != null) {
+      if (isScheduler(intervalOrScheduler)) {
+        scheduler = intervalOrScheduler;
+      } else {
+        intervalDuration = intervalOrScheduler;
+      }
+    }
+    return new Observable(function(subscriber) {
+      var due = isValidDate(dueTime) ? +dueTime - scheduler.now() : dueTime;
+      if (due < 0) {
+        due = 0;
+      }
+      var n = 0;
+      return scheduler.schedule(function() {
+        if (!subscriber.closed) {
+          subscriber.next(n++);
+          if (0 <= intervalDuration) {
+            this.schedule(void 0, intervalDuration);
+          } else {
+            subscriber.complete();
+          }
+        }
+      }, due);
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/interval.js
+  function interval(period, scheduler) {
+    if (period === void 0) {
+      period = 0;
+    }
+    if (scheduler === void 0) {
+      scheduler = asyncScheduler;
+    }
+    if (period < 0) {
+      period = 0;
+    }
+    return timer(period, period, scheduler);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/observable/merge.js
+  function merge() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+      args[_i] = arguments[_i];
+    }
+    var scheduler = popScheduler(args);
+    var concurrent = popNumber(args, Infinity);
+    var sources = args;
+    return !sources.length ? EMPTY : sources.length === 1 ? innerFrom(sources[0]) : mergeAll(concurrent)(from(sources, scheduler));
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/filter.js
+  function filter(predicate, thisArg) {
+    return operate(function(source, subscriber) {
+      var index = 0;
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        return predicate.call(thisArg, value, index++) && subscriber.next(value);
+      }));
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/scanInternals.js
+  function scanInternals(accumulator, seed, hasSeed, emitOnNext, emitBeforeComplete) {
+    return function(source, subscriber) {
+      var hasState = hasSeed;
+      var state = seed;
+      var index = 0;
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        var i = index++;
+        state = hasState ? accumulator(state, value, i) : (hasState = true, value);
+        emitOnNext && subscriber.next(state);
+      }, emitBeforeComplete && function() {
+        hasState && subscriber.next(state);
+        subscriber.complete();
+      }));
+    };
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/distinctUntilChanged.js
+  function distinctUntilChanged(comparator, keySelector) {
+    if (keySelector === void 0) {
+      keySelector = identity;
+    }
+    comparator = comparator !== null && comparator !== void 0 ? comparator : defaultCompare;
+    return operate(function(source, subscriber) {
+      var previousKey;
+      var first = true;
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        var currentKey = keySelector(value);
+        if (first || !comparator(previousKey, currentKey)) {
+          first = false;
+          previousKey = currentKey;
+          subscriber.next(value);
+        }
+      }));
+    });
+  }
+  function defaultCompare(a, b) {
+    return a === b;
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/scan.js
+  function scan(accumulator, seed) {
+    return operate(scanInternals(accumulator, seed, arguments.length >= 2, true));
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/share.js
+  function share(options) {
+    if (options === void 0) {
+      options = {};
+    }
+    var _a = options.connector, connector = _a === void 0 ? function() {
+      return new Subject();
+    } : _a, _b = options.resetOnError, resetOnError = _b === void 0 ? true : _b, _c = options.resetOnComplete, resetOnComplete = _c === void 0 ? true : _c, _d = options.resetOnRefCountZero, resetOnRefCountZero = _d === void 0 ? true : _d;
+    return function(wrapperSource) {
+      var connection;
+      var resetConnection;
+      var subject;
+      var refCount = 0;
+      var hasCompleted = false;
+      var hasErrored = false;
+      var cancelReset = function() {
+        resetConnection === null || resetConnection === void 0 ? void 0 : resetConnection.unsubscribe();
+        resetConnection = void 0;
+      };
+      var reset = function() {
+        cancelReset();
+        connection = subject = void 0;
+        hasCompleted = hasErrored = false;
+      };
+      var resetAndUnsubscribe = function() {
+        var conn = connection;
+        reset();
+        conn === null || conn === void 0 ? void 0 : conn.unsubscribe();
+      };
+      return operate(function(source, subscriber) {
+        refCount++;
+        if (!hasErrored && !hasCompleted) {
+          cancelReset();
+        }
+        var dest = subject = subject !== null && subject !== void 0 ? subject : connector();
+        subscriber.add(function() {
+          refCount--;
+          if (refCount === 0 && !hasErrored && !hasCompleted) {
+            resetConnection = handleReset(resetAndUnsubscribe, resetOnRefCountZero);
+          }
+        });
+        dest.subscribe(subscriber);
+        if (!connection && refCount > 0) {
+          connection = new SafeSubscriber({
+            next: function(value) {
+              return dest.next(value);
+            },
+            error: function(err) {
+              hasErrored = true;
+              cancelReset();
+              resetConnection = handleReset(reset, resetOnError, err);
+              dest.error(err);
+            },
+            complete: function() {
+              hasCompleted = true;
+              cancelReset();
+              resetConnection = handleReset(reset, resetOnComplete);
+              dest.complete();
+            }
+          });
+          innerFrom(source).subscribe(connection);
+        }
+      })(wrapperSource);
+    };
+  }
+  function handleReset(reset, on) {
+    var args = [];
+    for (var _i = 2; _i < arguments.length; _i++) {
+      args[_i - 2] = arguments[_i];
+    }
+    if (on === true) {
+      reset();
+      return;
+    }
+    if (on === false) {
+      return;
+    }
+    var onSubscriber = new SafeSubscriber({
+      next: function() {
+        onSubscriber.unsubscribe();
+        reset();
+      }
+    });
+    return innerFrom(on.apply(void 0, __spreadArray([], __read(args)))).subscribe(onSubscriber);
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/shareReplay.js
+  function shareReplay(configOrBufferSize, windowTime, scheduler) {
+    var _a, _b, _c;
+    var bufferSize;
+    var refCount = false;
+    if (configOrBufferSize && typeof configOrBufferSize === "object") {
+      _a = configOrBufferSize.bufferSize, bufferSize = _a === void 0 ? Infinity : _a, _b = configOrBufferSize.windowTime, windowTime = _b === void 0 ? Infinity : _b, _c = configOrBufferSize.refCount, refCount = _c === void 0 ? false : _c, scheduler = configOrBufferSize.scheduler;
+    } else {
+      bufferSize = configOrBufferSize !== null && configOrBufferSize !== void 0 ? configOrBufferSize : Infinity;
+    }
+    return share({
+      connector: function() {
+        return new ReplaySubject(bufferSize, windowTime, scheduler);
+      },
+      resetOnError: true,
+      resetOnComplete: false,
+      resetOnRefCountZero: refCount
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/startWith.js
+  function startWith() {
+    var values = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+      values[_i] = arguments[_i];
+    }
+    var scheduler = popScheduler(values);
+    return operate(function(source, subscriber) {
+      (scheduler ? concat(values, source, scheduler) : concat(values, source)).subscribe(subscriber);
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/switchMap.js
+  function switchMap(project, resultSelector) {
+    return operate(function(source, subscriber) {
+      var innerSubscriber = null;
+      var index = 0;
+      var isComplete = false;
+      var checkComplete = function() {
+        return isComplete && !innerSubscriber && subscriber.complete();
+      };
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        innerSubscriber === null || innerSubscriber === void 0 ? void 0 : innerSubscriber.unsubscribe();
+        var innerIndex = 0;
+        var outerIndex = index++;
+        innerFrom(project(value, outerIndex)).subscribe(innerSubscriber = createOperatorSubscriber(subscriber, function(innerValue) {
+          return subscriber.next(resultSelector ? resultSelector(value, innerValue, outerIndex, innerIndex++) : innerValue);
+        }, function() {
+          innerSubscriber = null;
+          checkComplete();
+        }));
+      }, function() {
+        isComplete = true;
+        checkComplete();
+      }));
+    });
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/tap.js
+  function tap(observerOrNext, error, complete) {
+    var tapObserver = isFunction(observerOrNext) || error || complete ? { next: observerOrNext, error, complete } : observerOrNext;
+    return tapObserver ? operate(function(source, subscriber) {
+      var _a;
+      (_a = tapObserver.subscribe) === null || _a === void 0 ? void 0 : _a.call(tapObserver);
+      var isUnsub = true;
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        var _a2;
+        (_a2 = tapObserver.next) === null || _a2 === void 0 ? void 0 : _a2.call(tapObserver, value);
+        subscriber.next(value);
+      }, function() {
+        var _a2;
+        isUnsub = false;
+        (_a2 = tapObserver.complete) === null || _a2 === void 0 ? void 0 : _a2.call(tapObserver);
+        subscriber.complete();
+      }, function(err) {
+        var _a2;
+        isUnsub = false;
+        (_a2 = tapObserver.error) === null || _a2 === void 0 ? void 0 : _a2.call(tapObserver, err);
+        subscriber.error(err);
+      }, function() {
+        var _a2, _b;
+        if (isUnsub) {
+          (_a2 = tapObserver.unsubscribe) === null || _a2 === void 0 ? void 0 : _a2.call(tapObserver);
+        }
+        (_b = tapObserver.finalize) === null || _b === void 0 ? void 0 : _b.call(tapObserver);
+      }));
+    }) : identity;
+  }
+
+  // node_modules/rxjs/dist/esm5/internal/operators/withLatestFrom.js
+  function withLatestFrom() {
+    var inputs = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+      inputs[_i] = arguments[_i];
+    }
+    var project = popResultSelector(inputs);
+    return operate(function(source, subscriber) {
+      var len = inputs.length;
+      var otherValues = new Array(len);
+      var hasValue = inputs.map(function() {
+        return false;
+      });
+      var ready = false;
+      var _loop_1 = function(i2) {
+        innerFrom(inputs[i2]).subscribe(createOperatorSubscriber(subscriber, function(value) {
+          otherValues[i2] = value;
+          if (!ready && !hasValue[i2]) {
+            hasValue[i2] = true;
+            (ready = hasValue.every(identity)) && (hasValue = null);
+          }
+        }, noop));
+      };
+      for (var i = 0; i < len; i++) {
+        _loop_1(i);
+      }
+      source.subscribe(createOperatorSubscriber(subscriber, function(value) {
+        if (ready) {
+          var values = __spreadArray([value], __read(otherValues));
+          subscriber.next(project ? project.apply(void 0, __spreadArray([], __read(values))) : values);
+        }
+      }));
+    });
+  }
+
+  // src/snake.ts
+  var GRID_SIZE = 20;
+  var CELL_SIZE = 24;
+  var CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
+  var INITIAL_SPEED = 150;
+  var SPEED_INCREMENT = 5;
+  var MIN_SPEED = 60;
+  var OPPOSITE = {
+    UP: "DOWN",
+    DOWN: "UP",
+    LEFT: "RIGHT",
+    RIGHT: "LEFT"
+  };
+  var KEY_TO_DIR = {
+    ArrowUp: "UP",
+    w: "UP",
+    W: "UP",
+    ArrowDown: "DOWN",
+    s: "DOWN",
+    S: "DOWN",
+    ArrowLeft: "LEFT",
+    a: "LEFT",
+    A: "LEFT",
+    ArrowRight: "RIGHT",
+    d: "RIGHT",
+    D: "RIGHT"
+  };
+  var loadHighScore = () => parseInt(localStorage.getItem("snakeHighScore") ?? "0");
+  var saveHighScore = (n) => localStorage.setItem("snakeHighScore", String(n));
+  var randomFood = (snake) => {
+    let pos;
+    do {
+      pos = {
+        x: Math.floor(Math.random() * GRID_SIZE),
+        y: Math.floor(Math.random() * GRID_SIZE)
+      };
+    } while (snake.some((p) => p.x === pos.x && p.y === pos.y));
+    return pos;
+  };
+  var nextHead = (head, dir) => ({
+    UP: { x: head.x, y: head.y - 1 },
+    DOWN: { x: head.x, y: head.y + 1 },
+    LEFT: { x: head.x - 1, y: head.y },
+    RIGHT: { x: head.x + 1, y: head.y }
+  })[dir];
+  var isOutOfBounds = (p) => p.x < 0 || p.x >= GRID_SIZE || p.y < 0 || p.y >= GRID_SIZE;
+  var samePoint = (a, b) => a.x === b.x && a.y === b.y;
+  var makeFoodParticles = (food) => Array.from({ length: 10 }, (_, i) => {
+    const angle = Math.PI * 2 * i / 10;
+    const speed = 1.5 + Math.random() * 2;
+    return {
+      x: food.x * CELL_SIZE + CELL_SIZE / 2,
+      y: food.y * CELL_SIZE + CELL_SIZE / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: "#f97316",
+      life: 20,
+      maxLife: 20
+    };
+  });
+  var makeDeathParticles = (snake) => snake.flatMap(
+    (seg) => Array.from({ length: 3 }, () => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3;
+      return {
+        x: seg.x * CELL_SIZE + CELL_SIZE / 2,
+        y: seg.y * CELL_SIZE + CELL_SIZE / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color: "#ef4444",
+        life: 30,
+        maxLife: 30
+      };
+    })
+  );
+  var stepParticles = (ps) => ps.filter((p) => p.life > 0).map((p) => ({
+    ...p,
+    x: p.x + p.vx,
+    y: p.y + p.vy,
+    vx: p.vx * 0.92,
+    vy: p.vy * 0.92,
+    life: p.life - 1
+  }));
+  var initialState = () => ({
+    snake: [],
+    food: { x: 0, y: 0 },
+    direction: "RIGHT",
+    nextDirection: "RIGHT",
+    score: 0,
+    highScore: loadHighScore(),
+    status: "IDLE",
+    speed: INITIAL_SPEED,
+    particles: [],
+    frame: 0
+  });
+  var startState = (highScore) => {
+    const snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+    return {
+      snake,
+      food: randomFood(snake),
+      direction: "RIGHT",
+      nextDirection: "RIGHT",
+      score: 0,
+      highScore,
+      status: "RUNNING",
+      speed: INITIAL_SPEED,
+      particles: [],
+      frame: 0
+    };
+  };
+  function reduce(state, action) {
+    switch (action.type) {
+      case "START":
+        return startState(state.highScore);
+      case "TOGGLE_PAUSE":
+        if (state.status === "RUNNING") return { ...state, status: "PAUSED" };
+        if (state.status === "PAUSED") return { ...state, status: "RUNNING" };
+        return startState(state.highScore);
+      case "SET_DIRECTION":
+        if (state.status !== "RUNNING") return state;
+        if (action.dir === OPPOSITE[state.direction]) return state;
+        return { ...state, nextDirection: action.dir };
+      case "TICK": {
+        if (state.status !== "RUNNING") return state;
+        const dir = state.nextDirection;
+        const head = nextHead(state.snake[0], dir);
+        const particles = stepParticles(state.particles);
+        if (isOutOfBounds(head) || state.snake.some((p) => samePoint(p, head))) {
+          return {
+            ...state,
+            status: "GAME_OVER",
+            particles: [...particles, ...makeDeathParticles(state.snake)]
+          };
+        }
+        const ate = samePoint(head, state.food);
+        const snake = ate ? [head, ...state.snake] : [head, ...state.snake.slice(0, -1)];
+        if (!ate) {
+          return { ...state, direction: dir, snake, particles, frame: state.frame + 1 };
+        }
+        const score = state.score + 10;
+        const highScore = Math.max(score, state.highScore);
+        if (highScore > state.highScore) saveHighScore(highScore);
+        return {
+          ...state,
+          direction: dir,
+          snake,
+          food: randomFood(snake),
+          score,
+          highScore,
+          speed: Math.max(MIN_SPEED, state.speed - SPEED_INCREMENT),
+          particles: [...particles, ...makeFoodParticles(state.food)],
+          frame: state.frame + 1
+        };
+      }
+      default:
+        return state;
+    }
+  }
+  function drawGrid(ctx) {
+    ctx.fillStyle = "#0a0a0f";
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.strokeStyle = "rgba(255,255,255,0.03)";
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= GRID_SIZE; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * CELL_SIZE, 0);
+      ctx.lineTo(i * CELL_SIZE, CANVAS_SIZE);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * CELL_SIZE);
+      ctx.lineTo(CANVAS_SIZE, i * CELL_SIZE);
+      ctx.stroke();
+    }
+  }
+  function drawParticles(ctx, particles) {
+    for (const p of particles) {
+      const alpha = p.life / p.maxLife;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3 * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+  function drawEyes(ctx, head, dir) {
+    const cx = head.x * CELL_SIZE + CELL_SIZE / 2;
+    const cy = head.y * CELL_SIZE + CELL_SIZE / 2;
+    const off = 5;
+    const r = 2.5;
+    const [e1x, e1y, e2x, e2y] = {
+      RIGHT: [cx + 3, cy - off, cx + 3, cy + off],
+      LEFT: [cx - 3, cy - off, cx - 3, cy + off],
+      UP: [cx - off, cy - 3, cx + off, cy - 3],
+      DOWN: [cx - off, cy + 3, cx + off, cy + 3]
+    }[dir];
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(e1x, e1y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(e2x, e2y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#111";
+    ctx.beginPath();
+    ctx.arc(e1x, e1y, r / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(e2x, e2y, r / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  function drawFood(ctx, food, frame) {
+    const fx = food.x * CELL_SIZE + CELL_SIZE / 2;
+    const fy = food.y * CELL_SIZE + CELL_SIZE / 2;
+    const pulse = 0.85 + 0.15 * Math.sin(frame * 0.15);
+    const fr = (CELL_SIZE / 2 - 2) * pulse;
+    const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+    grad.addColorStop(0, "#fff7ed");
+    grad.addColorStop(0.4, "#f97316");
+    grad.addColorStop(1, "#c2410c");
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = "#f97316";
+    ctx.beginPath();
+    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  function drawSnake(ctx, snake, direction) {
+    snake.forEach((seg, i) => {
+      const x = seg.x * CELL_SIZE;
+      const y = seg.y * CELL_SIZE;
+      const alpha = 1 - i / snake.length * 0.5;
+      if (i === 0) {
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#22c55e";
+        const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+        grad.addColorStop(0, `rgba(134,239,172,${alpha})`);
+        grad.addColorStop(1, `rgba(21,128,61,${alpha})`);
+        roundRect(ctx, x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 6);
+        ctx.fillStyle = grad;
         ctx.fill();
         ctx.shadowBlur = 0;
-        // Snake
-        for (let i = 0; i < this.snake.length; i++) {
-            const seg = this.snake[i];
-            const x = seg.x * CELL_SIZE;
-            const y = seg.y * CELL_SIZE;
-            const t = i / this.snake.length;
-            const alpha = 1 - t * 0.5;
-            if (i === 0) {
-                // Head
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = "#22c55e";
-                const headGrad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-                headGrad.addColorStop(0, `rgba(134,239,172,${alpha})`);
-                headGrad.addColorStop(1, `rgba(21,128,61,${alpha})`);
-                this.roundRect(ctx, x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, 6);
-                ctx.fillStyle = headGrad;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                // Eyes
-                this.drawEyes(ctx, seg);
-            }
-            else {
-                const bodyGrad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-                bodyGrad.addColorStop(0, `rgba(74,222,128,${alpha})`);
-                bodyGrad.addColorStop(1, `rgba(22,101,52,${alpha})`);
-                this.roundRect(ctx, x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
-                ctx.fillStyle = bodyGrad;
-                ctx.fill();
-            }
-        }
-        if (this.state === "PAUSED") {
-            ctx.fillStyle = "rgba(0,0,0,0.45)";
-            ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        }
-    }
-    drawEyes(ctx, head) {
-        const cx = head.x * CELL_SIZE + CELL_SIZE / 2;
-        const cy = head.y * CELL_SIZE + CELL_SIZE / 2;
-        const eyeOffset = 5;
-        const eyeR = 2.5;
-        let e1x = cx, e1y = cy, e2x = cx, e2y = cy;
-        switch (this.direction) {
-            case "RIGHT":
-                e1x = cx + 3;
-                e1y = cy - eyeOffset;
-                e2x = cx + 3;
-                e2y = cy + eyeOffset;
-                break;
-            case "LEFT":
-                e1x = cx - 3;
-                e1y = cy - eyeOffset;
-                e2x = cx - 3;
-                e2y = cy + eyeOffset;
-                break;
-            case "UP":
-                e1x = cx - eyeOffset;
-                e1y = cy - 3;
-                e2x = cx + eyeOffset;
-                e2y = cy - 3;
-                break;
-            case "DOWN":
-                e1x = cx - eyeOffset;
-                e1y = cy + 3;
-                e2x = cx + eyeOffset;
-                e2y = cy + 3;
-                break;
-        }
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.arc(e1x, e1y, eyeR, 0, Math.PI * 2);
+        drawEyes(ctx, seg, direction);
+      } else {
+        const grad = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
+        grad.addColorStop(0, `rgba(74,222,128,${alpha})`);
+        grad.addColorStop(1, `rgba(22,101,52,${alpha})`);
+        roundRect(ctx, x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4, 4);
+        ctx.fillStyle = grad;
         ctx.fill();
-        ctx.beginPath();
-        ctx.arc(e2x, e2y, eyeR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#111";
-        ctx.beginPath();
-        ctx.arc(e1x, e1y, eyeR / 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(e2x, e2y, eyeR / 2, 0, Math.PI * 2);
-        ctx.fill();
+      }
+    });
+  }
+  function render(ctx, state) {
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    drawGrid(ctx);
+    drawParticles(ctx, state.particles);
+    if (state.status === "IDLE") return;
+    drawFood(ctx, state.food, state.frame);
+    drawSnake(ctx, state.snake, state.direction);
+    if (state.status === "PAUSED") {
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
-    roundRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.arcTo(x + w, y, x + w, y + r, r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-        ctx.lineTo(x + r, y + h);
-        ctx.arcTo(x, y + h, x, y + h - r, r);
-        ctx.lineTo(x, y + r);
-        ctx.arcTo(x, y, x + r, y, r);
-        ctx.closePath();
+  }
+  function updateDOM(state) {
+    document.getElementById("score").textContent = String(state.score);
+    document.getElementById("high-score").textContent = String(state.highScore);
+    document.getElementById("state-label").textContent = state.status === "PAUSED" ? "PAUSE" : state.status === "GAME_OVER" ? "GAME OVER" : "";
+    const overlay = document.getElementById("game-over-overlay");
+    if (state.status === "GAME_OVER") {
+      document.getElementById("final-score").textContent = String(state.score);
+      overlay.classList.add("visible");
+    } else {
+      overlay.classList.remove("visible");
     }
-    updateScoreDisplay() {
-        document.getElementById("score").textContent = String(this.score);
-        document.getElementById("high-score").textContent = String(this.highScore);
+    if (state.status !== "IDLE") {
+      document.getElementById("start-overlay").classList.add("hidden");
     }
-    getState() { return this.state; }
-}
-// ─── Particle ─────────────────────────────────────────────────────────────────
-class Particle {
-    constructor(x, y, vx, vy, color, life) {
-        this.x = x;
-        this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-        this.color = color;
-        this.life = life;
-        this.maxLife = life;
-    }
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vx *= 0.92;
-        this.vy *= 0.92;
-        this.life--;
-    }
-    draw(ctx) {
-        const alpha = this.life / this.maxLife;
-        const r = 3 * alpha;
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-    }
-}
-// ─── Bootstrap ────────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", () => {
+  }
+  window.addEventListener("DOMContentLoaded", () => {
     const canvas = document.getElementById("game-canvas");
-    const game = new SnakeGame(canvas);
-    document.getElementById("btn-start").addEventListener("click", () => {
-        document.getElementById("game-over-overlay").classList.remove("visible");
-        game.start();
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    const ctx = canvas.getContext("2d");
+    const action$ = new Subject();
+    const PREVENT_KEYS = /* @__PURE__ */ new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"]);
+    const keydown$ = fromEvent(document, "keydown").pipe(
+      tap((e) => {
+        if (PREVENT_KEYS.has(e.key)) e.preventDefault();
+      }),
+      share()
+    );
+    const directionAction$ = keydown$.pipe(
+      map((e) => KEY_TO_DIR[e.key]),
+      filter((dir) => dir !== void 0),
+      map((dir) => ({ type: "SET_DIRECTION", dir }))
+    );
+    const pauseAction$ = keydown$.pipe(
+      filter((e) => e.key === " "),
+      map(() => ({ type: "TOGGLE_PAUSE" }))
+    );
+    const startAction$ = merge(
+      fromEvent(document.getElementById("btn-start"), "click"),
+      fromEvent(document.getElementById("btn-restart"), "click"),
+      keydown$.pipe(filter((e) => e.key === "Enter"))
+    ).pipe(map(() => ({ type: "START" })));
+    const touchStart$ = fromEvent(canvas, "touchstart", { passive: false }).pipe(
+      tap((e) => e.preventDefault()),
+      map((e) => ({ x: e.touches[0].clientX, y: e.touches[0].clientY })),
+      share()
+    );
+    const swipeAction$ = fromEvent(canvas, "touchend", { passive: false }).pipe(
+      tap((e) => e.preventDefault()),
+      withLatestFrom(touchStart$),
+      map(([end, start]) => {
+        const dx = end.changedTouches[0].clientX - start.x;
+        const dy = end.changedTouches[0].clientY - start.y;
+        const dir = Math.abs(dx) > Math.abs(dy) ? dx > 0 ? "RIGHT" : "LEFT" : dy > 0 ? "DOWN" : "UP";
+        return { type: "SET_DIRECTION", dir };
+      })
+    );
+    const INIT = initialState();
+    const state$ = action$.pipe(
+      scan(reduce, INIT),
+      startWith(INIT),
+      shareReplay(1)
+    );
+    const tick$ = state$.pipe(
+      map((s) => s.status === "RUNNING" ? s.speed : null),
+      distinctUntilChanged(),
+      switchMap(
+        (speed) => speed !== null ? interval(speed).pipe(map(() => ({ type: "TICK" }))) : EMPTY
+      )
+    );
+    merge(directionAction$, pauseAction$, startAction$, swipeAction$, tick$).subscribe(action$);
+    state$.subscribe((state) => {
+      render(ctx, state);
+      updateDOM(state);
     });
-    document.getElementById("btn-restart").addEventListener("click", () => {
-        document.getElementById("game-over-overlay").classList.remove("visible");
-        game.start();
-    });
-    // Mobile swipe
-    let touchStartX = 0, touchStartY = 0;
-    canvas.addEventListener("touchstart", (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        e.preventDefault();
-    }, { passive: false });
-    canvas.addEventListener("touchend", (e) => {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        const dy = e.changedTouches[0].clientY - touchStartY;
-        if (Math.abs(dx) > Math.abs(dy)) {
-            document.dispatchEvent(new KeyboardEvent("keydown", { key: dx > 0 ? "ArrowRight" : "ArrowLeft" }));
-        }
-        else {
-            document.dispatchEvent(new KeyboardEvent("keydown", { key: dy > 0 ? "ArrowDown" : "ArrowUp" }));
-        }
-        e.preventDefault();
-    }, { passive: false });
-});
+  });
+})();

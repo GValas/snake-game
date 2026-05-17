@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNAKE</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <h1>SNAKE</h1>
+
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-label">SCORE</span>
+      <span class="hud-value" id="score">0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">BEST</span>
+      <span class="hud-value" id="high-score">0</span>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="game-canvas"></canvas>
+    <div id="state-label"></div>
+
+    <div id="start-overlay">
+      <p>PRÊT ?</p>
+      <button class="btn" id="btn-start">JOUER</button>
+    </div>
+
+    <div id="game-over-overlay">
+      <h2>GAME OVER</h2>
+      <p>SCORE &nbsp;<span id="final-score">0</span></p>
+      <button class="btn" id="btn-restart">REJOUER</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    WASD / FLÈCHES — déplacer &nbsp;|&nbsp; ESPACE — pause &nbsp;|&nbsp; ENTRÉE — démarrer
+  </div>
+
+  <script src="src/snake.js"></script>
+  <script>
+    // Hide start overlay after first click
+    document.getElementById("btn-start").addEventListener("click", () => {
+      document.getElementById("start-overlay").classList.add("hidden");
+    });
+  </script>
+</body>
+</html>
